@@ -21,8 +21,14 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
         {/* Background */}
-        <div className="absolute inset-0 mesh-bg noise"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30"></div>
+        <div className="absolute inset-0">
+          <img 
+            src="https://image.qwenlm.ai/generated-images/fe71767d-9b78-4e10-956a-cd05063d3681/_result.png" 
+            alt="Nature background" 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50"></div>
         
         {/* Floating Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -30,27 +36,35 @@ export default function Home() {
           <div className="absolute bottom-20 left-[10%] w-96 h-96 bg-green-300/20 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
           <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-teal-400/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '4s' }}></div>
           
-          {/* Floating Icons */}
+          {/* Floating Elements */}
           <motion.div
             animate={{ y: [-20, 20, -20], rotate: [0, 10, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-32 right-[15%] text-6xl opacity-20"
-          >♻️</motion.div>
+            className="absolute top-32 right-[15%] opacity-30"
+          >
+            <Leaf className="w-16 h-16 text-white" />
+          </motion.div>
           <motion.div
             animate={{ y: [20, -20, 20], rotate: [0, -10, 0] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute bottom-32 left-[20%] text-5xl opacity-20"
-          >🌿</motion.div>
+            className="absolute bottom-32 left-[20%] opacity-30"
+          >
+            <Recycle className="w-14 h-14 text-white" />
+          </motion.div>
           <motion.div
             animate={{ y: [-15, 15, -15] }}
             transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-1/3 left-[8%] text-4xl opacity-20"
-          >🌍</motion.div>
+            className="absolute top-1/3 left-[8%] opacity-30"
+          >
+            <TreePine className="w-12 h-12 text-white" />
+          </motion.div>
           <motion.div
             animate={{ y: [10, -25, 10] }}
             transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute bottom-1/3 right-[8%] text-4xl opacity-20"
-          >🌱</motion.div>
+            className="absolute bottom-1/3 right-[8%] opacity-30"
+          >
+            <Leaf className="w-10 h-10 text-white" />
+          </motion.div>
         </div>
 
         {/* Content */}
@@ -263,9 +277,13 @@ export default function Home() {
                 variants={itemVariant}
                 className="group bg-white rounded-3xl overflow-hidden shadow-lg shadow-gray-100 border border-gray-100 card-hover"
               >
-                <div className="relative bg-gradient-to-br from-emerald-50 to-green-50 p-8 overflow-hidden">
+                <div className="relative bg-gradient-to-br from-emerald-50 to-green-50 overflow-hidden aspect-square">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-200/30 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500"></div>
-                  <span className="text-6xl relative z-10 group-hover:scale-110 transition-transform duration-300 block text-center">{product.image}</span>
+                  <img 
+                    src={product.image} 
+                    alt={product.name}
+                    className="w-full h-full object-cover relative z-10 group-hover:scale-110 transition-transform duration-300"
+                  />
                 </div>
                 <div className="p-5">
                   <span className="inline-block bg-emerald-50 text-emerald-700 text-xs px-2.5 py-1 rounded-lg font-bold mb-2">{product.category}</span>
@@ -323,19 +341,19 @@ export default function Home() {
             className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
           >
             {[
-              { icon: '🥤', name: 'پلاستیک', points: '۴۰', bg: 'from-blue-50 to-blue-100', border: 'border-blue-200' },
-              { icon: '📰', name: 'کاغذ', points: '۵۰', bg: 'from-amber-50 to-amber-100', border: 'border-amber-200' },
-              { icon: '🍾', name: 'شیشه', points: '۵۰', bg: 'from-emerald-50 to-emerald-100', border: 'border-emerald-200' },
-              { icon: '🥫', name: 'فلزات', points: '۶۰', bg: 'from-gray-50 to-gray-100', border: 'border-gray-200' },
-              { icon: '👕', name: 'پارچه', points: '۳۰', bg: 'from-purple-50 to-purple-100', border: 'border-purple-200' },
-              { icon: '🔋', name: 'الکترونیک', points: '۱۰۰', bg: 'from-red-50 to-red-100', border: 'border-red-200' },
+              { name: 'پلاستیک', points: '۴۰', bg: 'from-blue-50 to-blue-100', border: 'border-blue-200', svg: <svg viewBox="0 0 64 64" className="w-10 h-10"><path fill="#3b82f6" d="M24 8h16v8h-16zM20 16h24l4 8v28a4 4 0 01-4 4H20a4 4 0 01-4-4V24z"/></svg> },
+              { name: 'کاغذ', points: '۵۰', bg: 'from-amber-50 to-amber-100', border: 'border-amber-200', svg: <svg viewBox="0 0 64 64" className="w-10 h-10"><path fill="#d97706" d="M16 8h24l12 12v36a4 4 0 01-4 4H16a4 4 0 01-4-4V12a4 4 0 014-4z"/><path fill="#fbbf24" d="M40 8v12h12"/></svg> },
+              { name: 'شیشه', points: '۵۰', bg: 'from-emerald-50 to-emerald-100', border: 'border-emerald-200', svg: <svg viewBox="0 0 64 64" className="w-10 h-10"><path fill="#10b981" d="M24 4h16v8l4 8v32a8 8 0 01-8 8h-8a8 8 0 01-8-8V20l4-8z"/></svg> },
+              { name: 'فلزات', points: '۶۰', bg: 'from-gray-50 to-gray-100', border: 'border-gray-200', svg: <svg viewBox="0 0 64 64" className="w-10 h-10"><path fill="#6b7280" d="M12 24h40v4a8 8 0 01-8 8H20a8 8 0 01-8-8zM20 36h24v20H20z"/></svg> },
+              { name: 'پارچه', points: '۳۰', bg: 'from-purple-50 to-purple-100', border: 'border-purple-200', svg: <svg viewBox="0 0 64 64" className="w-10 h-10"><path fill="#8b5cf6" d="M20 8l-8 12 8 8v28h24V28l8-8-8-12-8 4h-16z"/></svg> },
+              { name: 'الکترونیک', points: '۱۰۰', bg: 'from-red-50 to-red-100', border: 'border-red-200', svg: <svg viewBox="0 0 64 64" className="w-10 h-10"><rect fill="#ef4444" x="12" y="16" width="40" height="28" rx="4"/><path fill="#fca5a5" d="M24 44h16v8H24z"/><circle fill="#fca5a5" cx="32" cy="30" r="6"/></svg> },
             ].map((wasteItem, i) => (
               <motion.div
                 key={i}
                 variants={itemVariant}
                 className={`bg-gradient-to-br ${wasteItem.bg} border ${wasteItem.border} rounded-2xl p-5 text-center card-hover`}
               >
-                <div className="text-4xl mb-3">{wasteItem.icon}</div>
+                <div className="mb-3 flex justify-center">{wasteItem.svg}</div>
                 <div className="font-bold text-gray-800 text-sm">{wasteItem.name}</div>
                 <div className="gradient-text font-black text-lg mt-1">{wasteItem.points}</div>
                 <div className="text-[10px] text-gray-500">امتیاز/کیلو</div>
@@ -407,7 +425,7 @@ export default function Home() {
               <span className="text-sm">به زمین کمک کن، هدیه بگیر</span>
             </div>
             <h2 className="text-4xl md:text-6xl font-black mb-6">
-              همین الان شروع کن! 🌱
+              همین الان شروع کن!
             </h2>
             <p className="text-xl text-white/80 mb-10 max-w-xl mx-auto">
               با عضویت در سبز بازیافت، هم به محیط زیست کمک کنید و هم هدایا دریافت کنید

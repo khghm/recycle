@@ -132,7 +132,7 @@ export default function UserDashboard() {
                         <p className="font-bold text-gray-800 text-sm">{record.wasteType}</p>
                         <p className="text-xs text-gray-500">{record.date} - {record.weight} کیلو</p>
                       </div>
-                      <span className="text-emerald-600 font-black text-sm bg-emerald-50 px-3 py-1 rounded-lg">+{record.pointsAwarded}⭐</span>
+                      <span className="text-emerald-600 font-black text-sm bg-emerald-50 px-3 py-1 rounded-lg flex items-center gap-1"><TrendingUp className="w-3 h-3" />+{record.pointsAwarded}</span>
                     </div>
                   ))}
                   {myRecords.length === 0 && <p className="text-gray-400 text-sm text-center py-4">هنوز زباله‌ای تحویل نداده‌اید</p>}
@@ -151,9 +151,9 @@ export default function UserDashboard() {
                         <p className="text-xs text-gray-500">{purchase.date}</p>
                       </div>
                       <div className="text-left">
-                        <span className="text-red-500 font-black text-sm bg-red-50 px-3 py-1 rounded-lg">-{purchase.points}⭐</span>
+                        <span className="text-red-500 font-black text-sm bg-red-50 px-3 py-1 rounded-lg flex items-center gap-1"><TrendingUp className="w-3 h-3" />-{purchase.points}</span>
                         <p className={`text-xs mt-1 ${purchase.status === 'delivered' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                          {purchase.status === 'delivered' ? '✅ تحویل شده' : '⏳ در انتظار'}
+                          {purchase.status === 'delivered' ? 'تحویل شده' : 'در انتظار'}
                         </p>
                       </div>
                     </div>

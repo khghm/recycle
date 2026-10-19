@@ -119,19 +119,19 @@ export default function HowItWorks() {
             className="grid grid-cols-2 md:grid-cols-3 gap-4"
           >
             {[
-              { icon: '🥤', name: 'پلاستیک', points: '۴۰', bg: 'from-blue-50 to-blue-100', border: 'border-blue-200' },
-              { icon: '📰', name: 'کاغذ', points: '۵۰', bg: 'from-amber-50 to-amber-100', border: 'border-amber-200' },
-              { icon: '🍾', name: 'شیشه', points: '۵۰', bg: 'from-emerald-50 to-emerald-100', border: 'border-emerald-200' },
-              { icon: '🥫', name: 'فلزات', points: '۶۰', bg: 'from-gray-50 to-gray-100', border: 'border-gray-200' },
-              { icon: '👕', name: 'پارچه', points: '۳۰', bg: 'from-purple-50 to-purple-100', border: 'border-purple-200' },
-              { icon: '🔋', name: 'الکترونیک', points: '۱۰۰', bg: 'from-red-50 to-red-100', border: 'border-red-200' },
+              { icon: '🧴', name: 'پلاستیک', points: '۴۰', bg: 'from-blue-50 to-blue-100', border: 'border-blue-200', svg: <svg viewBox="0 0 64 64" className="w-12 h-12"><path fill="#3b82f6" d="M24 8h16v8h-16zM20 16h24l4 8v28a4 4 0 01-4 4H20a4 4 0 01-4-4V24z"/></svg> },
+              { icon: '📄', name: 'کاغذ', points: '۵۰', bg: 'from-amber-50 to-amber-100', border: 'border-amber-200', svg: <svg viewBox="0 0 64 64" className="w-12 h-12"><path fill="#d97706" d="M16 8h24l12 12v36a4 4 0 01-4 4H16a4 4 0 01-4-4V12a4 4 0 014-4z"/><path fill="#fbbf24" d="M40 8v12h12"/></svg> },
+              { icon: '🫙', name: 'شیشه', points: '۵۰', bg: 'from-emerald-50 to-emerald-100', border: 'border-emerald-200', svg: <svg viewBox="0 0 64 64" className="w-12 h-12"><path fill="#10b981" d="M24 4h16v8l4 8v32a8 8 0 01-8 8h-8a8 8 0 01-8-8V20l4-8z"/></svg> },
+              { icon: '🔩', name: 'فلزات', points: '۶۰', bg: 'from-gray-50 to-gray-100', border: 'border-gray-200', svg: <svg viewBox="0 0 64 64" className="w-12 h-12"><path fill="#6b7280" d="M12 24h40v4a8 8 0 01-8 8H20a8 8 0 01-8-8zM20 36h24v20H20z"/></svg> },
+              { icon: '👔', name: 'پارچه', points: '۳۰', bg: 'from-purple-50 to-purple-100', border: 'border-purple-200', svg: <svg viewBox="0 0 64 64" className="w-12 h-12"><path fill="#8b5cf6" d="M20 8l-8 12 8 8v28h24V28l8-8-8-12-8 4h-16z"/></svg> },
+              { icon: '🔌', name: 'الکترونیک', points: '۱۰۰', bg: 'from-red-50 to-red-100', border: 'border-red-200', svg: <svg viewBox="0 0 64 64" className="w-12 h-12"><rect fill="#ef4444" x="12" y="16" width="40" height="28" rx="4"/><path fill="#fca5a5" d="M24 44h16v8H24z"/><circle fill="#fca5a5" cx="32" cy="30" r="6"/></svg> },
             ].map((wasteItem, i) => (
               <motion.div
                 key={i}
                 variants={itemVariant}
                 className={`bg-gradient-to-br ${wasteItem.bg} border ${wasteItem.border} rounded-2xl p-6 text-center card-hover`}
               >
-                <div className="text-5xl mb-3">{wasteItem.icon}</div>
+                <div className="mb-3 flex justify-center">{wasteItem.svg}</div>
                 <h4 className="font-bold text-gray-800">{wasteItem.name}</h4>
                 <p className="gradient-text font-black text-2xl mt-2">{wasteItem.points}</p>
                 <p className="text-xs text-gray-500">امتیاز به ازای هر کیلو</p>

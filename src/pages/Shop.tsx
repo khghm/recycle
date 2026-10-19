@@ -35,7 +35,7 @@ export default function Shop() {
       productId: product.id, productName: product.name,
       points: product.points, status: 'pending',
     });
-    if (success) setMessage({ text: 'خرید با موفقیت ثبت شد! 🎉', type: 'success' });
+    if (success) setMessage({ text: 'خرید با موفقیت ثبت شد!', type: 'success' });
     else setMessage({ text: 'امتیاز کافی ندارید یا محصول موجود نیست', type: 'error' });
     setShowModal(false);
     setTimeout(() => setMessage(null), 3000);
@@ -165,12 +165,16 @@ export default function Shop() {
               transition={{ delay: i * 0.05 }}
               className="group bg-white rounded-3xl overflow-hidden shadow-lg shadow-gray-100 border border-gray-100 card-hover"
             >
-              <div className="relative bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 p-8 overflow-hidden">
+              <div className="relative bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 overflow-hidden aspect-square">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-200/20 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700"></div>
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-green-200/20 rounded-full translate-y-1/2 -translate-x-1/2 group-hover:scale-150 transition-transform duration-700"></div>
-                <span className="text-7xl relative z-10 group-hover:scale-110 transition-transform duration-500 block text-center drop-shadow-lg">{product.image}</span>
+                <img 
+                  src={product.image} 
+                  alt={product.name}
+                  className="w-full h-full object-cover relative z-10 group-hover:scale-110 transition-transform duration-500"
+                />
                 {product.stock <= 3 && product.stock > 0 && (
-                  <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg">
+                  <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg z-20">
                     فقط {product.stock} عدد
                   </div>
                 )}
@@ -217,7 +221,7 @@ export default function Shop() {
 
         {filteredProducts.length === 0 && (
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">🔍</div>
+            <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 font-bold">محصولی یافت نشد</p>
           </div>
         )}
@@ -241,8 +245,12 @@ export default function Shop() {
               className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl"
             >
               <div className="text-center">
-                <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-4xl">{selectedProductData.image}</span>
+                <div className="w-32 h-32 bg-emerald-50 rounded-3xl overflow-hidden mx-auto mb-4">
+                  <img 
+                    src={selectedProductData.image} 
+                    alt={selectedProductData.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <h3 className="text-xl font-black text-gray-900 mb-2">{selectedProductData.name}</h3>
                 <p className="text-gray-500 text-sm mb-6">{selectedProductData.description}</p>

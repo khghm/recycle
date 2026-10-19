@@ -9,7 +9,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddDay, setShowAddDay] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', description: '', points: 0, image: '📦', category: '', stock: 0 });
+  const [newProduct, setNewProduct] = useState({ name: '', description: '', points: 0, image: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=400&fit=crop', category: '', stock: 0 });
   const [newDay, setNewDay] = useState({ date: '', employeeId: '', area: '' });
 
   if (!currentUser || currentUser.role !== 'admin') return <Navigate to="/login" />;
@@ -22,7 +22,7 @@ export default function AdminDashboard() {
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
     addProduct(newProduct);
-    setNewProduct({ name: '', description: '', points: 0, image: '📦', category: '', stock: 0 });
+    setNewProduct({ name: '', description: '', points: 0, image: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=400&fit=crop', category: '', stock: 0 });
     setShowAddProduct(false);
   };
 
@@ -135,7 +135,7 @@ export default function AdminDashboard() {
                               <p className="font-bold text-gray-800 text-sm">{record.userName}</p>
                               <p className="text-xs text-gray-500">{record.wasteType} - {record.weight} کیلو</p>
                             </div>
-                            <span className="text-emerald-600 font-black text-sm bg-emerald-50 px-3 py-1 rounded-lg">+{record.pointsAwarded}⭐</span>
+                            <span className="text-emerald-600 font-black text-sm bg-emerald-50 px-3 py-1 rounded-lg flex items-center gap-1"><Award className="w-3 h-3" />+{record.pointsAwarded}</span>
                           </div>
                         ))}
                         {collectionRecords.length === 0 && <p className="text-gray-400 text-sm text-center py-4">رکوردی وجود ندارد</p>}
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
                               <p className="font-bold text-gray-800 text-sm">{purchase.userName}</p>
                               <p className="text-xs text-gray-500">{purchase.productName}</p>
                             </div>
-                            <span className="text-red-500 font-black text-sm bg-red-50 px-3 py-1 rounded-lg">-{purchase.points}⭐</span>
+                            <span className="text-red-500 font-black text-sm bg-red-50 px-3 py-1 rounded-lg flex items-center gap-1"><TrendingUp className="w-3 h-3" />-{purchase.points}</span>
                           </div>
                         ))}
                         {purchases.length === 0 && <p className="text-gray-400 text-sm text-center py-4">خریدی ثبت نشده</p>}
@@ -192,7 +192,7 @@ export default function AdminDashboard() {
                               <td className="p-4 text-gray-500 text-sm">{user.phone}</td>
                               <td className="p-4">
                                 <span className="bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-black border border-amber-100">
-                                  {user.points} ⭐
+                                  <span className="flex items-center gap-1"><Award className="w-3 h-3" />{user.points}</span>
                                 </span>
                               </td>
                               <td className="p-4 text-gray-500 text-sm">{user.createdAt}</td>
@@ -302,7 +302,9 @@ export default function AdminDashboard() {
                     {products.map((product) => (
                       <div key={product.id} className="bg-white rounded-2xl p-5 shadow-lg shadow-gray-100 border border-gray-100 card-hover">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-4xl">{product.image}</span>
+                          <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50">
+                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                          </div>
                           <button onClick={() => deleteProduct(product.id)} className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition">
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -390,7 +392,7 @@ export default function AdminDashboard() {
                                   day.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
                                   'bg-red-50 text-red-700 border border-red-100'
                                 }`}>
-                                  {day.status === 'completed' ? '✅ انجام شده' : day.status === 'scheduled' ? '📅 برنامه‌ریزی' : '❌ لغو'}
+                                  {day.status === 'completed' ? 'انجام شده' : day.status === 'scheduled' ? 'برنامه‌ریزی شده' : 'لغو شده'}
                                 </span>
                               </td>
                               <td className="p-4">

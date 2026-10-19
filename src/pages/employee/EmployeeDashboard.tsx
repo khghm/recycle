@@ -40,7 +40,7 @@ export default function EmployeeDashboard() {
       employeeName: currentUser.name, date: new Date().toISOString().split('T')[0],
       wasteType: newRecord.wasteType, weight: newRecord.weight, pointsAwarded: newRecord.pointsAwarded, status: 'completed',
     });
-    setMessage(`امتیاز ${newRecord.pointsAwarded} برای ${user.name} ثبت شد ✅`);
+    setMessage(`امتیاز ${newRecord.pointsAwarded} برای ${user.name} ثبت شد`);
     setNewRecord({ userId: '', wasteType: 'پلاستیک', weight: 0, pointsAwarded: 0 });
     setShowAddRecord(false);
     setTimeout(() => setMessage(''), 3000);
@@ -141,7 +141,7 @@ export default function EmployeeDashboard() {
                       day.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
                       day.status === 'scheduled' ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'
                     }`}>
-                      {day.status === 'completed' ? '✅ انجام شده' : day.status === 'scheduled' ? '📅 برنامه‌ریزی' : '❌ لغو'}
+                      {day.status === 'completed' ? 'انجام شده' : day.status === 'scheduled' ? 'برنامه‌ریزی شده' : 'لغو شده'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-500">
