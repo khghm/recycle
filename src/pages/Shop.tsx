@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
+import React, { useState, useMemo } from 'react';
+import { useApp, POINTS_PER_KG } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Coins, Search, Filter, Star, Check, X, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, Coins, Search, Filter, Star, Check, X, AlertTriangle, Recycle, ArrowLeft, Calendar, MapPin } from 'lucide-react';
 
 export default function Shop() {
-  const { products, currentUser, addPurchase } = useApp();
+  const { products, currentUser, addPurchase, addCollectionRequest, collectionRequests } = useApp();
   const [selectedCategory, setSelectedCategory] = useState('همه');
   const [showModal, setShowModal] = useState(false);
+  const [showWastePlan, setShowWastePlan] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [selectedCombination, setSelectedCombination] = useState(0);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
@@ -20,10 +22,93 @@ export default function Shop() {
     return matchCategory && matchSearch;
   });
 
+  const selectedProductData = products.find((p) => p.id === selectedProduct);
+  
+  // محاسبه امتیاز مورد نیاز
+  const requiredPoints = useMemo(() => {
+    if (!selectedProductData || !currentUser) return 0;
+    return Math.max(0, selectedProductData.points - currentUser.points);
+  }, [selectedProductData, currentUser]);
+
+  // محاسبه برنامه زباله
+  const wastePlan = useMemo(() => {
+    if (requiredPoints <= 0) return [];
+    const wasteTypes = Object.entries(POINTS_PER_KG);
+    const plan: { wasteType: string; weight: number; pointsPerKg: number; totalPoints: number }[] = [];
+    let remaining = requiredPoints;
+    const sorted = [...wasteTypes].sort((a, b) => b[1] - a[1]);
+    
+    for (const [type, pointsPerKg] of sorted) {
+      if (remaining <= 0) break;
+      const weight = Math.ceil(remaining / pointsPerKg);
+      const totalPoints = weight * pointsPerKg;
+      plan.push({ wasteType: type, weight, pointsPerKg, totalPoints });
+      remaining -= totalPoints;
+    }
+    return plan;
+  }, [requiredPoints]);
+
+  // محاسبه ترکیب‌ها
+  const combinations = useMemo(() => {
+    if (requiredPoints <= 0) return [];
+    const combos: { wasteType: string; weight: number; pointsPerKg: number; totalPoints: number }[][] = [];
+    const wasteTypes = Object.entries(POINTS_PER_KG);
+    const sorted = [...wasteTypes].sort((a, b) => b[1] - a[1]);
+
+    // ترکیب ۱: فقط یک نوع زباله (بالاترین امتیاز)
+    const combo1: { wasteType: string; weight: number; pointsPerKg: number; totalPoints: number }[] = [];
+    const [type1, points1] = sorted[0];
+    const weight1 = Math.ceil(requiredPoints / points1);
+    combo1.push({ wasteType: type1, weight: weight1, pointsPerKg: points1, totalPoints: weight1 * points1 });
+    combos.push(combo1);
+
+    // ترکیب ۲: دو نوع زباله
+    if (sorted.length >= 2) {
+      const combo2: { wasteType: string; weight: number; pointsPerKg: number; totalPoints: number }[] = [];
+      const halfPoints = Math.ceil(requiredPoints / 2);
+      const [type2a, points2a] = sorted[0];
+      const [type2b, points2b] = sorted[1];
+      const weight2a = Math.ceil(halfPoints / points2a);
+      const remaining2 = requiredPoints - weight2a * points2a;
+      const weight2b = remaining2 > 0 ? Math.ceil(remaining2 / points2b) : 0;
+      combo2.push({ wasteType: type2a, weight: weight2a, pointsPerKg: points2a, totalPoints: weight2a * points2a });
+      if (weight2b > 0) {
+        combo2.push({ wasteType: type2b, weight: weight2b, pointsPerKg: points2b, totalPoints: weight2b * points2b });
+      }
+      combos.push(combo2);
+    }
+
+    // ترکیب ۳: سه نوع زباله
+    if (sorted.length >= 3) {
+      const combo3: { wasteType: string; weight: number; pointsPerKg: number; totalPoints: number }[] = [];
+      const thirdPoints = Math.ceil(requiredPoints / 3);
+      const [type3a, points3a] = sorted[0];
+      const [type3b, points3b] = sorted[1];
+      const [type3c, points3c] = sorted[2];
+      const weight3a = Math.ceil(thirdPoints / points3a);
+      const weight3b = Math.ceil(thirdPoints / points3b);
+      const remaining3 = requiredPoints - (weight3a * points3a + weight3b * points3b);
+      const weight3c = remaining3 > 0 ? Math.ceil(remaining3 / points3c) : 0;
+      combo3.push({ wasteType: type3a, weight: weight3a, pointsPerKg: points3a, totalPoints: weight3a * points3a });
+      combo3.push({ wasteType: type3b, weight: weight3b, pointsPerKg: points3b, totalPoints: weight3b * points3b });
+      if (weight3c > 0) {
+        combo3.push({ wasteType: type3c, weight: weight3c, pointsPerKg: points3c, totalPoints: weight3c * points3c });
+      }
+      combos.push(combo3);
+    }
+
+    return combos;
+  }, [requiredPoints]);
+
   const handleBuy = (productId: string) => {
     if (!currentUser) { navigate('/login'); return; }
     setSelectedProduct(productId);
-    setShowModal(true);
+    const product = products.find((p) => p.id === productId);
+    if (product && currentUser.points >= product.points) {
+      setShowModal(true);
+    } else {
+      setShowWastePlan(true);
+    }
   };
 
   const confirmPurchase = () => {
@@ -41,7 +126,25 @@ export default function Shop() {
     setTimeout(() => setMessage(null), 3000);
   };
 
-  const selectedProductData = products.find((p) => p.id === selectedProduct);
+  const handleRequestCollection = () => {
+    if (!currentUser || !selectedProductData) return;
+    const selectedCombo = combinations[selectedCombination] || wastePlan;
+    
+    addCollectionRequest({
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userPhone: currentUser.phone,
+      userAddress: currentUser.address,
+      productId: selectedProductData.id,
+      productName: selectedProductData.name,
+      requiredPoints: requiredPoints,
+      wastePlan: selectedCombo,
+    });
+
+    setMessage({ text: 'درخواست جمع‌آوری با موفقیت ثبت شد!', type: 'success' });
+    setShowWastePlan(false);
+    setTimeout(() => setMessage(null), 3000);
+  };
 
   return (
     <div className="min-h-screen pb-20">
@@ -174,10 +277,6 @@ export default function Shop() {
                   className="absolute inset-0 w-full h-full object-cover z-10 group-hover:scale-110 transition-transform duration-500"
                   loading="lazy"
                   referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
                 />
                 {product.stock <= 3 && product.stock > 0 && (
                   <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg z-20">
@@ -214,12 +313,17 @@ export default function Shop() {
                     {currentUser && currentUser.points >= product.points ? (
                       <span className="flex items-center gap-1"><ShoppingBag className="w-3.5 h-3.5" />خرید</span>
                     ) : currentUser ? (
-                      <span className="flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" />امتیاز کم</span>
+                      <span className="flex items-center gap-1"><Recycle className="w-3.5 h-3.5" />جمع‌آوری</span>
                     ) : (
                       <span>ورود</span>
                     )}
                   </motion.button>
                 </div>
+                {currentUser && currentUser.points < product.points && (
+                  <div className="mt-2 text-xs text-amber-600 bg-amber-50 rounded-lg px-2 py-1 text-center">
+                    {product.points - currentUser.points} امتیاز دیگر نیاز دارید
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
@@ -280,13 +384,6 @@ export default function Shop() {
                   </div>
                 </div>
 
-                {(currentUser?.points || 0) < selectedProductData.points && (
-                  <div className="bg-red-50 border border-red-100 text-red-700 p-3 rounded-xl mb-4 text-sm flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    <span>امتیاز کافی ندارید!</span>
-                  </div>
-                )}
-
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowModal(false)}
@@ -299,13 +396,131 @@ export default function Shop() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={confirmPurchase}
-                    disabled={(currentUser?.points || 0) < selectedProductData.points}
-                    className="flex-1 bg-gradient-to-l from-emerald-500 to-green-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-l from-emerald-500 to-green-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2"
                   >
                     <Check className="w-4 h-4" />
                     تأیید خرید
                   </motion.button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Waste Plan Modal */}
+      <AnimatePresence>
+        {showWastePlan && selectedProductData && currentUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
+            onClick={() => setShowWastePlan(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl my-8"
+            >
+              <div className="text-center mb-6">
+                <div className="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                  <Recycle className="w-10 h-10 text-amber-600" />
+                </div>
+                <h3 className="text-xl font-black text-gray-900 mb-2">برنامه جمع‌آوری زباله</h3>
+                <p className="text-gray-500 text-sm">
+                  برای خرید <span className="font-bold text-emerald-600">{selectedProductData.name}</span> به{' '}
+                  <span className="font-bold text-amber-600">{requiredPoints}</span> امتیاز دیگر نیاز دارید
+                </p>
+              </div>
+
+              {/* Product Info */}
+              <div className="bg-gray-50 rounded-2xl p-4 mb-6 flex items-center gap-4">
+                <div className="w-16 h-16 bg-white rounded-xl overflow-hidden shrink-0">
+                  <img src={selectedProductData.image} alt={selectedProductData.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-900">{selectedProductData.name}</h4>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-gray-500">قیمت: <span className="font-bold text-emerald-600">{selectedProductData.points}</span> امتیاز</span>
+                    <span className="text-gray-500">امتیاز شما: <span className="font-bold">{currentUser.points}</span></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Combinations */}
+              {combinations.length > 1 && (
+                <div className="mb-6">
+                  <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-black">۱</span>
+                    ترکیب‌های پیشنهادی
+                  </h4>
+                  <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                    {combinations.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setSelectedCombination(i)}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition ${
+                          selectedCombination === i
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-emerald-50'
+                        }`}
+                      >
+                        ترکیب {i + 1} ({combinations[i].length} نوع زباله)
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Waste Plan Table */}
+              <div className="bg-gradient-to-l from-emerald-50 to-green-50 rounded-2xl p-5 mb-6 border border-emerald-100">
+                <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Recycle className="w-5 h-5 text-emerald-600" />
+                  برنامه جمع‌آوری
+                </h4>
+                <div className="space-y-3">
+                  {(combinations[selectedCombination] || wastePlan).map((item, i) => (
+                    <div key={i} className="bg-white rounded-xl p-4 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-gray-800">{item.wasteType}</span>
+                        <span className="text-xs text-gray-500 mr-2">({item.pointsPerKg} امتیاز/کیلو)</span>
+                      </div>
+                      <div className="text-left">
+                        <span className="font-black text-emerald-600 text-lg">{item.weight}</span>
+                        <span className="text-xs text-gray-500 mr-1">کیلوگرم</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 pt-4 border-t border-emerald-200 flex items-center justify-between">
+                  <span className="text-gray-600 font-bold">مجموع امتیاز:</span>
+                  <span className="font-black text-emerald-700 text-xl">
+                    {(combinations[selectedCombination] || wastePlan).reduce((sum, item) => sum + item.totalPoints, 0)} امتیاز
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowWastePlan(false)}
+                  className="flex-1 border-2 border-gray-200 text-gray-700 py-3.5 rounded-2xl font-bold hover:bg-gray-50 transition flex items-center justify-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  بعداً
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleRequestCollection}
+                  className="flex-1 bg-gradient-to-l from-emerald-500 to-green-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  درخواست جمع‌آوری
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>

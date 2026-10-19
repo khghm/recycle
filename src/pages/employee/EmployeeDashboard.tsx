@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, PlusCircle, ClipboardList, UserCheck, Scale, Award, Package, Check, X, MapPin } from 'lucide-react';
+import { Calendar, PlusCircle, ClipboardList, UserCheck, Scale, Award, Package, Check, X, MapPin, Bell, Clock, User } from 'lucide-react';
 
 export default function EmployeeDashboard() {
-  const { currentUser, users, collectionDays, collectionRecords, addCollectionRecord } = useApp();
-  const [activeTab, setActiveTab] = useState('schedule');
+  const { currentUser, users, collectionDays, collectionRequests, collectionRecords, addCollectionRecord, updateCollectionRequest } = useApp();
+  const [activeTab, setActiveTab] = useState('requests');
   const [showAddRecord, setShowAddRecord] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState('');
   const [newRecord, setNewRecord] = useState({ userId: '', wasteType: 'پلاستیک', weight: 0, pointsAwarded: 0 });
   const [message, setMessage] = useState('');
 
@@ -16,8 +19,13 @@ export default function EmployeeDashboard() {
   const regularUsers = users.filter((u) => u.role === 'user');
   const myDays = collectionDays.filter((d) => d.employeeId === currentUser.id);
   const myRecords = collectionRecords.filter((r) => r.employeeId === currentUser.id);
+  const pendingRequests = collectionRequests.filter((r) => r.status === 'pending' || r.status === 'assigned');
+  const myScheduledRequests = collectionRequests.filter((r) => r.employeeId === currentUser.id && r.status === 'scheduled');
   const totalPointsGiven = myRecords.reduce((sum, r) => sum + r.pointsAwarded, 0);
   const totalWeight = myRecords.reduce((sum, r) => sum + r.weight, 0);
+
+  // تاریخ‌های شمسی موجود برای انتخاب
+  const availableDates = myDays.filter((d) => d.status === 'scheduled').map((d) => d.date);
 
   const pointsPerKg: Record<string, number> = { 'پلاستیک': 40, 'کاغذ': 50, 'شیشه': 50, 'فلزات': 60, 'پارچه': 30, 'الکترونیک': 100 };
 
@@ -46,8 +54,24 @@ export default function EmployeeDashboard() {
     setTimeout(() => setMessage(''), 3000);
   };
 
+  const handleScheduleRequest = () => {
+    if (!selectedRequest || !selectedDate) return;
+    updateCollectionRequest(selectedRequest, {
+      status: 'scheduled',
+      scheduledDate: selectedDate,
+      employeeId: currentUser.id,
+      employeeName: currentUser.name,
+    });
+    setMessage('درخواست زمان‌بندی شد');
+    setShowScheduleModal(false);
+    setSelectedRequest(null);
+    setSelectedDate('');
+    setTimeout(() => setMessage(''), 3000);
+  };
+
   const tabs = [
-    { id: 'schedule', label: 'برنامه کاری', icon: Calendar },
+    { id: 'requests', label: 'درخواست‌ها', icon: Bell },
+    { id: 'scheduled', label: 'زمان‌بندی شده', icon: Clock },
     { id: 'collect', label: 'ثبت جمع‌آوری', icon: PlusCircle },
     { id: 'records', label: 'سوابق من', icon: ClipboardList },
   ];
@@ -122,41 +146,141 @@ export default function EmployeeDashboard() {
           ))}
         </div>
 
-        {/* Schedule */}
-        {activeTab === 'schedule' && (
+        {/* Requests */}
+        {activeTab === 'requests' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-emerald-600" />
-              برنامه کاری شما
+              <Bell className="w-5 h-5 text-emerald-600" />
+              درخواست‌های جمع‌آوری
+              {pendingRequests.length > 0 && (
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">{pendingRequests.length}</span>
+              )}
             </h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              {myDays.map((day) => (
-                <div key={day.id} className={`bg-white rounded-2xl p-6 shadow-lg border-r-4 card-hover ${
-                  day.status === 'completed' ? 'border-emerald-500' :
-                  day.status === 'scheduled' ? 'border-blue-500' : 'border-red-500'
-                }`}>
+            <div className="space-y-4">
+              {pendingRequests.map((request) => (
+                <div key={request.id} className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-lg font-black text-gray-900">{day.date}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center">
+                        <User className="w-6 h-6 text-amber-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900">{request.userName}</h3>
+                        <p className="text-xs text-gray-500">{request.userPhone}</p>
+                      </div>
+                    </div>
                     <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
-                      day.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
-                      day.status === 'scheduled' ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'
+                      request.status === 'assigned' ? 'bg-purple-50 text-purple-700' : 'bg-amber-50 text-amber-700'
                     }`}>
-                      {day.status === 'completed' ? 'انجام شده' : day.status === 'scheduled' ? 'برنامه‌ریزی شده' : 'لغو شده'}
+                      {request.status === 'assigned' ? 'تخصیص یافته' : 'در انتظار'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <MapPin className="w-4 h-4 text-emerald-500" />
-                    <span>{day.area}</span>
+
+                  <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="w-4 h-4 text-emerald-600" />
+                      <span className="font-bold text-gray-700">محصول: {request.productName}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Award className="w-4 h-4 text-amber-500" />
+                      <span className="text-gray-600">امتیاز مورد نیاز: <span className="font-bold">{request.requiredPoints}</span></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-blue-500" />
+                      <span className="text-gray-600 text-sm">{request.userAddress}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-emerald-50 rounded-xl p-4 mb-4 border border-emerald-100">
+                    <h4 className="text-sm font-bold text-emerald-700 mb-2">برنامه جمع‌آوری:</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {request.wastePlan.map((item, i) => (
+                        <div key={i} className="bg-white rounded-lg p-2 text-center">
+                          <p className="text-xs text-gray-500">{item.wasteType}</p>
+                          <p className="font-bold text-emerald-600">{item.weight} کیلو</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        setSelectedRequest(request.id);
+                        setShowScheduleModal(true);
+                      }}
+                      className="flex-1 bg-gradient-to-l from-emerald-500 to-green-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                    >
+                      <Calendar className="w-4 h-4" />
+                      زمان‌بندی
+                    </motion.button>
                   </div>
                 </div>
               ))}
+              {pendingRequests.length === 0 && (
+                <div className="bg-white rounded-2xl p-16 text-center shadow-lg">
+                  <Bell className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                  <p className="text-gray-400 font-bold">درخواست جدیدی وجود ندارد</p>
+                </div>
+              )}
             </div>
-            {myDays.length === 0 && (
-              <div className="bg-white rounded-2xl p-16 text-center shadow-lg">
-                <Calendar className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                <p className="text-gray-400 font-bold">هنوز روزی برای شما تعیین نشده</p>
-              </div>
-            )}
+          </motion.div>
+        )}
+
+        {/* Scheduled */}
+        {activeTab === 'scheduled' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-emerald-600" />
+              درخواست‌های زمان‌بندی شده
+            </h2>
+            <div className="space-y-4">
+              {myScheduledRequests.map((request) => (
+                <div key={request.id} className="bg-white rounded-2xl p-6 shadow-lg border border-blue-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                        <Clock className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900">{request.userName}</h3>
+                        <p className="text-xs text-gray-500">{request.userPhone}</p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700">
+                      زمان‌بندی شده
+                    </span>
+                  </div>
+
+                  <div className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-100">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="w-4 h-4 text-blue-600" />
+                      <span className="font-bold text-blue-700">زمان جمع‌آوری:</span>
+                    </div>
+                    <p className="text-blue-800 font-black text-lg">{request.scheduledDate}</p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="w-4 h-4 text-emerald-600" />
+                      <span className="font-bold text-gray-700">{request.productName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-blue-500" />
+                      <span className="text-gray-600 text-sm">{request.userAddress}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {myScheduledRequests.length === 0 && (
+                <div className="bg-white rounded-2xl p-16 text-center shadow-lg">
+                  <Clock className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                  <p className="text-gray-400 font-bold">درخواست زمان‌بندی شده‌ای ندارید</p>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
 
@@ -280,6 +404,74 @@ export default function EmployeeDashboard() {
           </motion.div>
         )}
       </div>
+
+      {/* Schedule Modal */}
+      <AnimatePresence>
+        {showScheduleModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowScheduleModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl"
+            >
+              <h3 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">
+                <Calendar className="w-6 h-6 text-emerald-600" />
+                انتخاب زمان جمع‌آوری
+              </h3>
+              <p className="text-gray-500 text-sm mb-6">یکی از تاریخ‌های موجود را انتخاب کنید:</p>
+              
+              <div className="space-y-2 mb-6">
+                {availableDates.length > 0 ? (
+                  availableDates.map((date) => (
+                    <button
+                      key={date}
+                      onClick={() => setSelectedDate(date)}
+                      className={`w-full p-4 rounded-xl text-right transition ${
+                        selectedDate === date
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-gray-50 text-gray-700 hover:bg-emerald-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        <span className="font-bold">{date}</span>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-gray-400 text-center py-4">تاریخی موجود نیست</p>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowScheduleModal(false)}
+                  className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-50 transition"
+                >
+                  انصراف
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleScheduleRequest}
+                  disabled={!selectedDate}
+                  className="flex-1 bg-gradient-to-l from-emerald-500 to-green-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  تأیید
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

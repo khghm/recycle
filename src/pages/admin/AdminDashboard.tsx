@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Users, UserCheck, Package, Truck, ClipboardList, ShoppingBag, Plus, Trash2, Check, X, Leaf, TrendingUp, Award, Recycle } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, Package, Truck, ClipboardList, ShoppingBag, Plus, Trash2, Check, X, Leaf, TrendingUp, Award, Recycle, Calendar, Bell, Clock, MapPin } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const { currentUser, users, products, collectionDays, collectionRecords, purchases, addCollectionDay, addProduct, deleteProduct, updatePurchase, updateCollectionDay } = useApp();
+  const { currentUser, users, products, collectionDays, collectionRequests, collectionRecords, purchases, addCollectionDay, addProduct, deleteProduct, updatePurchase, updateCollectionDay, updateCollectionRequest } = useApp();
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddDay, setShowAddDay] = useState(false);
   const [newProduct, setNewProduct] = useState({ name: '', description: '', points: 0, image: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=400&fit=crop', category: '', stock: 0 });
-  const [newDay, setNewDay] = useState({ date: '', employeeId: '', area: '' });
+  const [newDay, setNewDay] = useState({ jYear: '', jMonth: '', jDay: '', hour: '', minute: '', employeeId: '', area: '' });
 
   if (!currentUser || currentUser.role !== 'admin') return <Navigate to="/login" />;
 
@@ -29,19 +29,22 @@ export default function AdminDashboard() {
   const handleAddDay = (e: React.FormEvent) => {
     e.preventDefault();
     const emp = employees.find((emp) => emp.id === newDay.employeeId);
-    if (emp) {
-      addCollectionDay({ date: newDay.date, employeeId: emp.id, employeeName: emp.name, area: newDay.area, status: 'scheduled' });
-      setNewDay({ date: '', employeeId: '', area: '' });
+    if (emp && newDay.jYear && newDay.jMonth && newDay.jDay && newDay.hour && newDay.minute) {
+      // تبدیل به فرمت شمسی با ساعت و دقیقه
+      const jDate = `${newDay.jYear}/${newDay.jMonth.padStart(2, '0')}/${newDay.jDay.padStart(2, '0')} - ${newDay.hour}:${newDay.minute}`;
+      addCollectionDay({ date: jDate, employeeId: emp.id, employeeName: emp.name, area: newDay.area, status: 'scheduled' });
+      setNewDay({ jYear: '', jMonth: '', jDay: '', hour: '', minute: '', employeeId: '', area: '' });
       setShowAddDay(false);
     }
   };
 
   const tabs = [
     { id: 'overview', label: 'نمای کلی', icon: LayoutDashboard },
+    { id: 'requests', label: 'درخواست‌ها', icon: Bell },
     { id: 'users', label: 'کاربران', icon: Users },
     { id: 'employees', label: 'کارمندان', icon: UserCheck },
     { id: 'products', label: 'محصولات', icon: Package },
-    { id: 'collections', label: 'جمع‌آوری', icon: Truck },
+    { id: 'collections', label: 'زمان‌بندی', icon: Truck },
     { id: 'records', label: 'سوابق', icon: ClipboardList },
     { id: 'purchases', label: 'خریدها', icon: ShoppingBag },
   ];
@@ -159,6 +162,104 @@ export default function AdminDashboard() {
                         {purchases.length === 0 && <p className="text-gray-400 text-sm text-center py-4">خریدی ثبت نشده</p>}
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Requests */}
+              {activeTab === 'requests' && (
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                      <Bell className="w-5 h-5 text-amber-600" />
+                    </div>
+                    درخواست‌های جمع‌آوری
+                    {collectionRequests.filter(r => r.status === 'pending').length > 0 && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                        {collectionRequests.filter(r => r.status === 'pending').length} جدید
+                      </span>
+                    )}
+                  </h2>
+                  <div className="space-y-4">
+                    {collectionRequests.map((request) => (
+                      <div key={request.id} className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
+                              <Users className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-gray-900">{request.userName}</h3>
+                              <p className="text-xs text-gray-500">{request.userPhone} | {request.userAddress}</p>
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
+                            request.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
+                            request.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
+                            request.status === 'assigned' ? 'bg-purple-50 text-purple-700' :
+                            'bg-amber-50 text-amber-700'
+                          }`}>
+                            {request.status === 'completed' ? 'تکمیل شده' :
+                             request.status === 'scheduled' ? 'زمان‌بندی شده' :
+                             request.status === 'assigned' ? 'تخصیص یافته' : 'در انتظار'}
+                          </span>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4 mb-4">
+                          <div className="bg-gray-50 rounded-xl p-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Package className="w-4 h-4 text-emerald-600" />
+                              <span className="font-bold text-gray-700">محصول: {request.productName}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Award className="w-4 h-4 text-amber-500" />
+                              <span className="text-gray-600">امتیاز مورد نیاز: <span className="font-bold">{request.requiredPoints}</span></span>
+                            </div>
+                          </div>
+                          <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                            <h4 className="text-sm font-bold text-emerald-700 mb-2">برنامه جمع‌آوری:</h4>
+                            <div className="space-y-1">
+                              {request.wastePlan.map((item, i) => (
+                                <div key={i} className="flex items-center justify-between text-sm">
+                                  <span className="text-gray-600">{item.wasteType}</span>
+                                  <span className="font-bold text-emerald-600">{item.weight} کیلو</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {request.scheduledDate && (
+                          <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 mb-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Calendar className="w-4 h-4 text-blue-600" />
+                              <span className="font-bold text-blue-700">زمان جمع‌آوری:</span>
+                            </div>
+                            <p className="text-blue-800 font-black text-lg">{request.scheduledDate}</p>
+                            {request.employeeName && (
+                              <p className="text-blue-700 text-sm mt-1">کارمند: {request.employeeName}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {request.status === 'pending' && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => updateCollectionRequest(request.id, { status: 'cancelled' })}
+                              className="px-4 py-2 border-2 border-red-200 text-red-600 rounded-xl font-bold hover:bg-red-50 transition"
+                            >
+                              لغو
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {collectionRequests.length === 0 && (
+                      <div className="bg-white rounded-2xl p-16 text-center shadow-lg">
+                        <Bell className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                        <p className="text-gray-400 font-bold">درخواستی ثبت نشده</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -351,14 +452,40 @@ export default function AdminDashboard() {
                         className="overflow-hidden mb-6"
                       >
                         <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-                          <form onSubmit={handleAddDay} className="grid md:grid-cols-3 gap-4">
-                            <input type="date" value={newDay.date} onChange={(e) => setNewDay({ ...newDay, date: e.target.value })} className="border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required />
-                            <select value={newDay.employeeId} onChange={(e) => setNewDay({ ...newDay, employeeId: e.target.value })} className="border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required>
-                              <option value="">انتخاب کارمند</option>
-                              {employees.map((emp) => (<option key={emp.id} value={emp.id}>{emp.name}</option>))}
-                            </select>
-                            <input type="text" placeholder="منطقه" value={newDay.area} onChange={(e) => setNewDay({ ...newDay, area: e.target.value })} className="border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required />
-                            <div className="md:col-span-3 flex gap-3">
+                          <h3 className="font-black text-gray-900 mb-4">تعیین روز جمع‌آوری جدید (تاریخ شمسی)</h3>
+                          <form onSubmit={handleAddDay} className="space-y-4">
+                            <div className="grid grid-cols-3 gap-3">
+                              <div>
+                                <label className="text-xs text-gray-500 font-bold mb-1 block">سال</label>
+                                <input type="number" placeholder="۱۴۰۳" value={newDay.jYear} onChange={(e) => setNewDay({ ...newDay, jYear: e.target.value })} className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required min="1400" max="1410" />
+                              </div>
+                              <div>
+                                <label className="text-xs text-gray-500 font-bold mb-1 block">ماه</label>
+                                <input type="number" placeholder="۱ تا ۱۲" value={newDay.jMonth} onChange={(e) => setNewDay({ ...newDay, jMonth: e.target.value })} className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required min="1" max="12" />
+                              </div>
+                              <div>
+                                <label className="text-xs text-gray-500 font-bold mb-1 block">روز</label>
+                                <input type="number" placeholder="۱ تا ۳۱" value={newDay.jDay} onChange={(e) => setNewDay({ ...newDay, jDay: e.target.value })} className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required min="1" max="31" />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="text-xs text-gray-500 font-bold mb-1 block">ساعت</label>
+                                <input type="number" placeholder="۰۹" value={newDay.hour} onChange={(e) => setNewDay({ ...newDay, hour: e.target.value })} className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required min="0" max="23" />
+                              </div>
+                              <div>
+                                <label className="text-xs text-gray-500 font-bold mb-1 block">دقیقه</label>
+                                <input type="number" placeholder="۰۰" value={newDay.minute} onChange={(e) => setNewDay({ ...newDay, minute: e.target.value })} className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required min="0" max="59" />
+                              </div>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-3">
+                              <select value={newDay.employeeId} onChange={(e) => setNewDay({ ...newDay, employeeId: e.target.value })} className="border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required>
+                                <option value="">انتخاب کارمند</option>
+                                {employees.map((emp) => (<option key={emp.id} value={emp.id}>{emp.name}</option>))}
+                              </select>
+                              <input type="text" placeholder="منطقه" value={newDay.area} onChange={(e) => setNewDay({ ...newDay, area: e.target.value })} className="border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required />
+                            </div>
+                            <div className="flex gap-3">
                               <button type="submit" className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition">ذخیره</button>
                               <button type="button" onClick={() => setShowAddDay(false)} className="border-2 border-gray-200 px-6 py-2.5 rounded-xl font-bold hover:bg-gray-50 transition">انصراف</button>
                             </div>
