@@ -25,11 +25,35 @@ export interface Product {
 
 export interface CollectionDay {
   id: string;
-  date: string;
+  date: string; // شمسی با ساعت و دقیقه
   employeeId: string;
   employeeName: string;
   area: string;
   status: 'scheduled' | 'completed' | 'cancelled';
+}
+
+export interface CollectionRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userPhone: string;
+  userAddress: string;
+  productId: string;
+  productName: string;
+  requiredPoints: number;
+  wastePlan: WastePlan[];
+  status: 'pending' | 'assigned' | 'scheduled' | 'completed' | 'cancelled';
+  createdAt: string;
+  scheduledDate?: string;
+  employeeId?: string;
+  employeeName?: string;
+}
+
+export interface WastePlan {
+  wasteType: string;
+  weight: number;
+  pointsPerKg: number;
+  totalPoints: number;
 }
 
 export interface CollectionRecord {
@@ -43,6 +67,7 @@ export interface CollectionRecord {
   weight: number;
   pointsAwarded: number;
   status: 'pending' | 'completed';
+  requestId?: string;
 }
 
 export interface Purchase {
@@ -61,6 +86,7 @@ interface AppContextType {
   users: User[];
   products: Product[];
   collectionDays: CollectionDay[];
+  collectionRequests: CollectionRequest[];
   collectionRecords: CollectionRecord[];
   purchases: Purchase[];
   login: (email: string, password: string) => boolean;
@@ -74,6 +100,10 @@ interface AppContextType {
   addPurchase: (purchase: Omit<Purchase, 'id' | 'date'>) => boolean;
   updatePurchase: (id: string, status: Purchase['status']) => void;
   updateUserPoints: (userId: string, points: number) => void;
+  addCollectionRequest: (request: Omit<CollectionRequest, 'id' | 'createdAt' | 'status'>) => void;
+  updateCollectionRequest: (id: string, updates: Partial<CollectionRequest>) => void;
+  calculateWastePlan: (requiredPoints: number) => WastePlan[];
+  calculateCombinations: (requiredPoints: number) => WastePlan[][];
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -226,10 +256,20 @@ const initialProducts: Product[] = [
   },
 ];
 
+// نقاط هر کیلو زباله
+export const POINTS_PER_KG: Record<string, number> = {
+  'پلاستیک': 40,
+  'کاغذ': 50,
+  'شیشه': 50,
+  'فلزات': 60,
+  'پارچه': 30,
+  'الکترونیک': 100,
+};
+
 const initialCollectionDays: CollectionDay[] = [
   {
     id: '1',
-    date: '2024-03-15',
+    date: '۱۴۰۳/۰۱/۲۵ - ۰۹:۰۰',
     employeeId: '2',
     employeeName: 'علی محمدی',
     area: 'منطقه ۵ تهران',
@@ -237,13 +277,15 @@ const initialCollectionDays: CollectionDay[] = [
   },
   {
     id: '2',
-    date: '2024-03-22',
+    date: '۱۴۰۳/۰۲/۰۲ - ۱۰:۳۰',
     employeeId: '2',
     employeeName: 'علی محمدی',
     area: 'منطقه ۲ تهران',
     status: 'scheduled',
   },
 ];
+
+const initialCollectionRequests: CollectionRequest[] = [];
 
 const initialCollectionRecords: CollectionRecord[] = [
   {
@@ -320,6 +362,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('gr_collectionRecords');
     return saved ? JSON.parse(saved) : initialCollectionRecords;
   });
+  const [collectionRequests, setCollectionRequests] = useState<CollectionRequest[]>(() => {
+    const saved = localStorage.getItem('gr_collectionRequests');
+    return saved ? JSON.parse(saved) : initialCollectionRequests;
+  });
   const [purchases, setPurchases] = useState<Purchase[]>(() => {
     const saved = localStorage.getItem('gr_purchases');
     return saved ? JSON.parse(saved) : initialPurchases;
@@ -340,6 +386,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('gr_collectionRecords', JSON.stringify(collectionRecords));
   }, [collectionRecords]);
+
+  useEffect(() => {
+    localStorage.setItem('gr_collectionRequests', JSON.stringify(collectionRequests));
+  }, [collectionRequests]);
 
   useEffect(() => {
     localStorage.setItem('gr_purchases', JSON.stringify(purchases));
@@ -449,6 +499,90 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // محاسبه برنامه زباله برای رسیدن به امتیاز مورد نیاز
+  const calculateWastePlan = (requiredPoints: number): WastePlan[] => {
+    const wasteTypes = Object.entries(POINTS_PER_KG);
+    const plan: WastePlan[] = [];
+    let remaining = requiredPoints;
+
+    // شروع با بالاترین امتیاز به ازای هر کیلو
+    const sorted = [...wasteTypes].sort((a, b) => b[1] - a[1]);
+    
+    for (const [type, pointsPerKg] of sorted) {
+      if (remaining <= 0) break;
+      const weight = Math.ceil(remaining / pointsPerKg);
+      const totalPoints = weight * pointsPerKg;
+      plan.push({ wasteType: type, weight, pointsPerKg, totalPoints });
+      remaining -= totalPoints;
+    }
+
+    return plan;
+  };
+
+  // محاسبه ترکیب‌های مختلف زباله
+  const calculateCombinations = (requiredPoints: number): WastePlan[][] => {
+    const combinations: WastePlan[][] = [];
+    const wasteTypes = Object.entries(POINTS_PER_KG);
+
+    // ترکیب ۱: فقط یک نوع زباله (بالاترین امتیاز)
+    const sorted = [...wasteTypes].sort((a, b) => b[1] - a[1]);
+    const combo1: WastePlan[] = [];
+    const [type1, points1] = sorted[0];
+    const weight1 = Math.ceil(requiredPoints / points1);
+    combo1.push({ wasteType: type1, weight: weight1, pointsPerKg: points1, totalPoints: weight1 * points1 });
+    combinations.push(combo1);
+
+    // ترکیب ۲: دو نوع زباله
+    if (sorted.length >= 2) {
+      const combo2: WastePlan[] = [];
+      const halfPoints = Math.ceil(requiredPoints / 2);
+      const [type2a, points2a] = sorted[0];
+      const [type2b, points2b] = sorted[1];
+      const weight2a = Math.ceil(halfPoints / points2a);
+      const weight2b = Math.ceil((requiredPoints - weight2a * points2a) / points2b);
+      combo2.push({ wasteType: type2a, weight: weight2a, pointsPerKg: points2a, totalPoints: weight2a * points2a });
+      if (weight2b > 0) {
+        combo2.push({ wasteType: type2b, weight: weight2b, pointsPerKg: points2b, totalPoints: weight2b * points2b });
+      }
+      combinations.push(combo2);
+    }
+
+    // ترکیب ۳: سه نوع زباله
+    if (sorted.length >= 3) {
+      const combo3: WastePlan[] = [];
+      const thirdPoints = Math.ceil(requiredPoints / 3);
+      const [type3a, points3a] = sorted[0];
+      const [type3b, points3b] = sorted[1];
+      const [type3c, points3c] = sorted[2];
+      const weight3a = Math.ceil(thirdPoints / points3a);
+      const weight3b = Math.ceil(thirdPoints / points3b);
+      const remaining3 = requiredPoints - (weight3a * points3a + weight3b * points3b);
+      const weight3c = Math.ceil(remaining3 / points3c);
+      combo3.push({ wasteType: type3a, weight: weight3a, pointsPerKg: points3a, totalPoints: weight3a * points3a });
+      combo3.push({ wasteType: type3b, weight: weight3b, pointsPerKg: points3b, totalPoints: weight3b * points3b });
+      if (weight3c > 0) {
+        combo3.push({ wasteType: type3c, weight: weight3c, pointsPerKg: points3c, totalPoints: weight3c * points3c });
+      }
+      combinations.push(combo3);
+    }
+
+    return combinations;
+  };
+
+  const addCollectionRequest = (request: Omit<CollectionRequest, 'id' | 'createdAt' | 'status'>) => {
+    const newRequest: CollectionRequest = {
+      ...request,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString().split('T')[0],
+      status: 'pending',
+    };
+    setCollectionRequests([...collectionRequests, newRequest]);
+  };
+
+  const updateCollectionRequest = (id: string, updates: Partial<CollectionRequest>) => {
+    setCollectionRequests(collectionRequests.map((r) => (r.id === id ? { ...r, ...updates } : r)));
+  };
+
   // Check for saved session
   useEffect(() => {
     const saved = localStorage.getItem('gr_currentUser');
@@ -466,6 +600,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         users,
         products,
         collectionDays,
+        collectionRequests,
         collectionRecords,
         purchases,
         login,
@@ -479,6 +614,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addPurchase,
         updatePurchase,
         updateUserPoints,
+        addCollectionRequest,
+        updateCollectionRequest,
+        calculateWastePlan,
+        calculateCombinations,
       }}
     >
       {children}
