@@ -26,6 +26,7 @@ export default function Home() {
             src="https://image.qwenlm.ai/generated-images/fe71767d-9b78-4e10-956a-cd05063d3681/_result.png" 
             alt="Nature background" 
             className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50"></div>
@@ -277,12 +278,14 @@ export default function Home() {
                 variants={itemVariant}
                 className="group bg-white rounded-3xl overflow-hidden shadow-lg shadow-gray-100 border border-gray-100 card-hover"
               >
-                <div className="relative bg-gradient-to-br from-emerald-50 to-green-50 overflow-hidden aspect-square">
+                <div className="relative bg-gradient-to-br from-emerald-50 to-green-50 overflow-hidden" style={{ aspectRatio: '1/1' }}>
                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-200/30 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500"></div>
                   <img 
                     src={product.image} 
                     alt={product.name}
-                    className="w-full h-full object-cover relative z-10 group-hover:scale-110 transition-transform duration-300"
+                    className="absolute inset-0 w-full h-full object-cover z-10 group-hover:scale-110 transition-transform duration-300"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
                   />
                 </div>
                 <div className="p-5">

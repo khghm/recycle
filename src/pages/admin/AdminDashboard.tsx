@@ -303,7 +303,7 @@ export default function AdminDashboard() {
                       <div key={product.id} className="bg-white rounded-2xl p-5 shadow-lg shadow-gray-100 border border-gray-100 card-hover">
                         <div className="flex items-center justify-between mb-3">
                           <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50">
-                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           </div>
                           <button onClick={() => deleteProduct(product.id)} className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition">
                             <Trash2 className="w-4 h-4" />

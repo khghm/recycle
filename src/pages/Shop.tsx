@@ -165,13 +165,19 @@ export default function Shop() {
               transition={{ delay: i * 0.05 }}
               className="group bg-white rounded-3xl overflow-hidden shadow-lg shadow-gray-100 border border-gray-100 card-hover"
             >
-              <div className="relative bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 overflow-hidden aspect-square">
+              <div className="relative bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 overflow-hidden" style={{ aspectRatio: '1/1' }}>
                 <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-200/20 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700"></div>
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-green-200/20 rounded-full translate-y-1/2 -translate-x-1/2 group-hover:scale-150 transition-transform duration-700"></div>
                 <img 
                   src={product.image} 
                   alt={product.name}
-                  className="w-full h-full object-cover relative z-10 group-hover:scale-110 transition-transform duration-500"
+                  className="absolute inset-0 w-full h-full object-cover z-10 group-hover:scale-110 transition-transform duration-500"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
                 />
                 {product.stock <= 3 && product.stock > 0 && (
                   <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-lg z-20">
@@ -250,6 +256,7 @@ export default function Shop() {
                     src={selectedProductData.image} 
                     alt={selectedProductData.name}
                     className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
                   />
                 </div>
                 <h3 className="text-xl font-black text-gray-900 mb-2">{selectedProductData.name}</h3>

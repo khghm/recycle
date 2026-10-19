@@ -294,7 +294,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('gr_products');
-    return saved ? JSON.parse(saved) : initialProducts;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Migration: Replace emoji images with real URLs
+      const needsMigration = parsed.some((p: Product) => p.image && !p.image.startsWith('http'));
+      if (needsMigration) {
+        const migrated = parsed.map((p: Product) => {
+          const initial = initialProducts.find((ip) => ip.name === p.name);
+          if (initial && !p.image.startsWith('http')) {
+            return { ...p, image: initial.image };
+          }
+          return p;
+        });
+        return migrated;
+      }
+      return parsed;
+    }
+    return initialProducts;
   });
   const [collectionDays, setCollectionDays] = useState<CollectionDay[]>(() => {
     const saved = localStorage.getItem('gr_collectionDays');
