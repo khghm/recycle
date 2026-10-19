@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -13,6 +13,8 @@ import UserDashboard from './pages/user/UserDashboard';
 
 function AppRoutes() {
   const { currentUser } = useApp();
+  const location = useLocation();
+  const isDashboard = ['/admin', '/employee', '/user'].includes(location.pathname);
 
   return (
     <div className="min-h-screen flex flex-col">

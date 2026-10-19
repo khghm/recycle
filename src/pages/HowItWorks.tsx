@@ -1,174 +1,176 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Leaf, UserPlus, Package, Calendar, Scale, Star, ShoppingBag, Sparkles } from 'lucide-react';
 
 export default function HowItWorks() {
   const { currentUser } = useApp();
 
+  const steps = [
+    { icon: UserPlus, title: 'ثبت‌نام در سایت', desc: 'ابتدا در سایت ثبت‌نام کنید. اطلاعات شخصی خود شامل نام، شماره تلفن و آدرس را وارد کنید. پس از ثبت‌نام، یک داشبورد اختصاصی برای شما ایجاد می‌شود.', color: 'from-blue-500 to-indigo-600' },
+    { icon: Package, title: 'تفکیک زباله‌ها', desc: 'زباله‌های قابل بازیافت خود را تفکیک کنید. انواع زباله شامل پلاستیک، کاغذ، شیشه، فلزات، پارچه و لوازم الکترونیکی هر کدام امتیاز متفاوتی دارند.', color: 'from-emerald-500 to-green-600' },
+    { icon: Calendar, title: 'اطلاع از روزهای جمع‌آوری', desc: 'ادمین سایت روزهایی را برای جمع‌آوری زباله تعیین می‌کند. کارمندان ما در این روزها به مناطق مختلف مراجعه کرده و زباله‌ها را به صورت حضوری از شما دریافت می‌کنند.', color: 'from-green-500 to-teal-600' },
+    { icon: Scale, title: 'تحویل و وزن‌کشی', desc: 'کارمند جمع‌آوری، زباله‌های شما را وزن کرده و بر اساس نوع و وزن، امتیاز مربوطه را محاسبه و در سیستم ثبت می‌کند. این امتیاز بلافاصله به حساب شما اضافه می‌شود.', color: 'from-teal-500 to-cyan-600' },
+    { icon: Star, title: 'مشاهده امتیاز', desc: 'پس از ثبت، می‌توانید در داشبورد خود امتیاز کسب شده، سوابق جمع‌آوری و وضعیت حساب خود را مشاهده کنید. امتیاز شما نشان‌دهنده قدرت خریدتان در فروشگاه است.', color: 'from-amber-500 to-orange-600' },
+    { icon: ShoppingBag, title: 'خرید از فروشگاه', desc: 'با امتیازهای کسب شده، از فروشگاه سایت محصولات متنوع شامل اسکیت، عینک، صندلی، میز، دوچرخه، هدفون و بسیاری محصولات دیگر را خریداری کنید.', color: 'from-purple-500 to-pink-600' },
+  ];
+
+  const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } };
+  const itemVariant = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0, transition: { duration: 0.6 } } };
+
   return (
-    <div className="min-h-screen bg-green-50">
-      {/* Header */}
-      <section className="bg-gradient-to-bl from-green-600 to-emerald-500 text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-black mb-4">نحوه کار سایت</h1>
-          <p className="text-xl opacity-90">با چند قدم ساده، زباله‌هایتان را به امتیاز تبدیل کنید</p>
+    <div className="min-h-screen">
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-gradient-to-bl from-emerald-600 via-green-600 to-teal-600 pt-16 pb-24">
+        <div className="absolute inset-0 noise"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-400/20 rounded-full blur-3xl"></div>
+        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center text-white">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-5 py-2 mb-6"
+          >
+            <Sparkles className="w-4 h-4 text-yellow-300" />
+            <span className="text-sm font-medium">راهنمای استفاده</span>
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl md:text-6xl font-black mb-4"
+          >
+            چگونه کار می‌کند؟
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-xl text-white/70"
+          >
+            با چند قدم ساده، زباله‌هایتان را به امتیاز تبدیل کنید
+          </motion.p>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 60" fill="none" className="w-full">
+            <path d="M0,30 C360,60 720,0 1080,30 C1260,45 1380,40 1440,30 L1440,60 L0,60 Z" fill="#f9fafb"/>
+          </svg>
         </div>
       </section>
 
       {/* Steps */}
-      <section className="py-16">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4">
-          <div className="space-y-12">
-            {/* Step 1 */}
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-5xl">📝</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">۱</span>
-                  <h3 className="text-2xl font-bold text-gray-800">ثبت‌نام در سایت</h3>
+          <motion.div
+            variants={container}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+            className="space-y-6"
+          >
+            {steps.map((step, i) => (
+              <motion.div
+                key={i}
+                variants={itemVariant}
+                className="flex flex-col md:flex-row items-center gap-6 bg-white rounded-3xl p-6 md:p-8 shadow-lg shadow-gray-100 border border-gray-100 card-hover"
+              >
+                <div className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${step.color} flex items-center justify-center shrink-0 shadow-lg`}>
+                  <step.icon className="w-10 h-10 text-white" strokeWidth={1.5} />
                 </div>
-                <p className="text-gray-600 text-lg">
-                  ابتدا در سایت ثبت‌نام کنید. اطلاعات شخصی خود شامل نام، شماره تلفن و آدرس را وارد کنید. 
-                  پس از ثبت‌نام، یک داشبورد اختصاصی برای شما ایجاد می‌شود.
-                </p>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-5xl">📦</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">۲</span>
-                  <h3 className="text-2xl font-bold text-gray-800">تفکیک زباله‌ها</h3>
+                <div className="flex-1 text-center md:text-right">
+                  <div className="flex items-center gap-3 mb-2 justify-center md:justify-start">
+                    <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm">
+                      {i + 1}
+                    </span>
+                    <h3 className="text-xl font-black text-gray-900">{step.title}</h3>
+                  </div>
+                  <p className="text-gray-500 leading-relaxed">{step.desc}</p>
                 </div>
-                <p className="text-gray-600 text-lg">
-                  زباله‌های قابل بازیافت خود را تفکیک کنید. انواع زباله شامل پلاستیک، کاغذ، شیشه، فلزات، پارچه و لوازم الکترونیکی 
-                  هر کدام امتیاز متفاوتی دارند.
-                </p>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-5xl">📅</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">۳</span>
-                  <h3 className="text-2xl font-bold text-gray-800">اطلاع از روزهای جمع‌آوری</h3>
-                </div>
-                <p className="text-gray-600 text-lg">
-                  ادمین سایت روزهایی را برای جمع‌آوری زباله تعیین می‌کند. کارمندان ما در این روزها به مناطق مختلف مراجعه کرده 
-                  و زباله‌ها را به صورت حضوری از شما دریافت می‌کنند.
-                </p>
-              </div>
-            </div>
-
-            {/* Step 4 */}
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-5xl">⚖️</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">۴</span>
-                  <h3 className="text-2xl font-bold text-gray-800">تحویل و وزن‌کشی</h3>
-                </div>
-                <p className="text-gray-600 text-lg">
-                  کارمند جمع‌آوری، زباله‌های شما را وزن کرده و بر اساس نوع و وزن، امتیاز مربوطه را محاسبه و در سیستم ثبت می‌کند. 
-                  این امتیاز بلافاصله به حساب شما اضافه می‌شود.
-                </p>
-              </div>
-            </div>
-
-            {/* Step 5 */}
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-5xl">⭐</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">۵</span>
-                  <h3 className="text-2xl font-bold text-gray-800">مشاهده امتیاز</h3>
-                </div>
-                <p className="text-gray-600 text-lg">
-                  پس از ثبت، می‌توانید در داشبورد خود امتیاز کسب شده، سوابق جمع‌آوری و وضعیت حساب خود را مشاهده کنید. 
-                  امتیاز شما نشان‌دهنده قدرت خریدتان در فروشگاه است.
-                </p>
-              </div>
-            </div>
-
-            {/* Step 6 */}
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-5xl">🛍️</span>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">۶</span>
-                  <h3 className="text-2xl font-bold text-gray-800">خرید از فروشگاه</h3>
-                </div>
-                <p className="text-gray-600 text-lg">
-                  با امتیازهای کسب شده، از فروشگاه سایت محصولات متنوع شامل اسکیت، عینک، صندلی، میز، دوچرخه، 
-                  هدفون و بسیاری محصولات دیگر را خریداری کنید.
-                </p>
-              </div>
-            </div>
-          </div>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
       {/* Points Table */}
-      <section className="py-16 bg-white">
+      <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4">
-          <h2 className="text-3xl font-black text-gray-800 text-center mb-8">جدول امتیاز انواع زباله</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <span className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-bold mb-4">
+              <Star className="w-4 h-4" />
+              جدول امتیاز
+            </span>
+            <h2 className="text-3xl md:text-4xl font-black text-gray-900">
+              امتیاز هر نوع <span className="gradient-text">زباله</span>
+            </h2>
+          </motion.div>
+
+          <motion.div
+            variants={container}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+            className="grid grid-cols-2 md:grid-cols-3 gap-4"
+          >
             {[
-              { icon: '🥤', name: 'پلاستیک', points: '۴۰ امتیاز', color: 'bg-blue-50 border-blue-200' },
-              { icon: '📰', name: 'کاغذ', points: '۵۰ امتیاز', color: 'bg-yellow-50 border-yellow-200' },
-              { icon: '🍾', name: 'شیشه', points: '۵۰ امتیاز', color: 'bg-green-50 border-green-200' },
-              { icon: '🥫', name: 'فلزات', points: '۶۰ امتیاز', color: 'bg-gray-50 border-gray-200' },
-              { icon: '👕', name: 'پارچه', points: '۳۰ امتیاز', color: 'bg-purple-50 border-purple-200' },
-              { icon: '🔋', name: 'الکترونیک', points: '۱۰۰ امتیاز', color: 'bg-red-50 border-red-200' },
-            ].map((item, i) => (
-              <div key={i} className={`${item.color} border-2 rounded-xl p-5 text-center`}>
-                <span className="text-4xl block mb-2">{item.icon}</span>
-                <h4 className="font-bold text-gray-800">{item.name}</h4>
-                <p className="text-green-600 font-bold mt-1">{item.points}/کیلو</p>
-              </div>
+              { icon: '🥤', name: 'پلاستیک', points: '۴۰', bg: 'from-blue-50 to-blue-100', border: 'border-blue-200' },
+              { icon: '📰', name: 'کاغذ', points: '۵۰', bg: 'from-amber-50 to-amber-100', border: 'border-amber-200' },
+              { icon: '🍾', name: 'شیشه', points: '۵۰', bg: 'from-emerald-50 to-emerald-100', border: 'border-emerald-200' },
+              { icon: '🥫', name: 'فلزات', points: '۶۰', bg: 'from-gray-50 to-gray-100', border: 'border-gray-200' },
+              { icon: '👕', name: 'پارچه', points: '۳۰', bg: 'from-purple-50 to-purple-100', border: 'border-purple-200' },
+              { icon: '🔋', name: 'الکترونیک', points: '۱۰۰', bg: 'from-red-50 to-red-100', border: 'border-red-200' },
+            ].map((wasteItem, i) => (
+              <motion.div
+                key={i}
+                variants={itemVariant}
+                className={`bg-gradient-to-br ${wasteItem.bg} border ${wasteItem.border} rounded-2xl p-6 text-center card-hover`}
+              >
+                <div className="text-5xl mb-3">{wasteItem.icon}</div>
+                <h4 className="font-bold text-gray-800">{wasteItem.name}</h4>
+                <p className="gradient-text font-black text-2xl mt-2">{wasteItem.points}</p>
+                <p className="text-xs text-gray-500">امتیاز به ازای هر کیلو</p>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-16 bg-gradient-to-l from-green-700 to-emerald-600 text-white">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-black mb-4">آماده شروع هستید؟</h2>
-          <p className="text-xl opacity-90 mb-8">همین الان ثبت‌نام کنید و اولین امتیازهایتان را کسب کنید</p>
-          {!currentUser ? (
-            <Link
-              to="/register"
-              className="bg-white text-green-700 px-10 py-4 rounded-xl font-bold text-lg hover:bg-green-50 transition inline-block shadow-lg"
-            >
-              ثبت‌نام رایگان
-              <i className="fas fa-arrow-left mr-2"></i>
-            </Link>
-          ) : (
-            <Link
-              to="/user"
-              className="bg-white text-green-700 px-10 py-4 rounded-xl font-bold text-lg hover:bg-green-50 transition inline-block shadow-lg"
-            >
-              ورود به داشبورد
-              <i className="fas fa-tachometer-alt mr-2"></i>
-            </Link>
-          )}
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 mesh-bg noise"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/20"></div>
+        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center text-white">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl font-black mb-6">آماده شروع هستید؟</h2>
+            <p className="text-xl text-white/70 mb-10">همین الان ثبت‌نام کنید و اولین امتیازهایتان را کسب کنید</p>
+            {!currentUser ? (
+              <Link
+                to="/register"
+                className="group inline-flex items-center gap-2 bg-white text-emerald-700 px-10 py-5 rounded-2xl font-black text-lg shadow-2xl hover:scale-105 transition-all duration-300 btn-shine"
+              >
+                ثبت‌نام رایگان
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              </Link>
+            ) : (
+              <Link
+                to="/user"
+                className="group inline-flex items-center gap-2 bg-white text-emerald-700 px-10 py-5 rounded-2xl font-black text-lg shadow-2xl hover:scale-105 transition-all duration-300 btn-shine"
+              >
+                ورود به داشبورد
+                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              </Link>
+            )}
+          </motion.div>
         </div>
       </section>
     </div>

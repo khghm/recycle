@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Navigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Home, Recycle, ShoppingBag, User, Store, CalendarCheck, TrendingUp, Award, Coins, ArrowLeft, Check, Clock } from 'lucide-react';
 
 export default function UserDashboard() {
   const { currentUser, collectionRecords, purchases, products } = useApp();
   const [activeTab, setActiveTab] = useState('overview');
 
-  if (!currentUser || currentUser.role !== 'user') {
-    return <Navigate to="/login" />;
-  }
+  if (!currentUser || currentUser.role !== 'user') return <Navigate to="/login" />;
 
   const myRecords = collectionRecords.filter((r) => r.userId === currentUser.id);
   const myPurchases = purchases.filter((p) => p.userId === currentUser.id);
@@ -17,279 +17,262 @@ export default function UserDashboard() {
   const totalWaste = myRecords.reduce((sum, r) => sum + r.weight, 0);
 
   const tabs = [
-    { id: 'overview', label: 'نمای کلی', icon: 'fas fa-home' },
-    { id: 'records', label: 'سوابق جمع‌آوری', icon: 'fas fa-recycle' },
-    { id: 'purchases', label: 'خریدهای من', icon: 'fas fa-shopping-bag' },
-    { id: 'profile', label: 'پروفایل', icon: 'fas fa-user' },
+    { id: 'overview', label: 'نمای کلی', icon: Home },
+    { id: 'records', label: 'سوابق', icon: Recycle },
+    { id: 'purchases', label: 'خریدها', icon: ShoppingBag },
+    { id: 'profile', label: 'پروفایل', icon: User },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto p-6">
         {/* Header Card */}
-        <div className="bg-gradient-to-l from-green-600 to-emerald-500 rounded-2xl p-6 mb-6 text-white relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/10 rounded-full translate-x-1/2 translate-y-1/2"></div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden bg-gradient-to-bl from-emerald-600 via-green-600 to-teal-600 rounded-3xl p-8 mb-8 text-white"
+        >
+          <div className="absolute inset-0 noise"></div>
+          <div className="absolute top-0 left-0 w-72 h-72 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-0 right-0 w-56 h-56 bg-white/5 rounded-full translate-x-1/2 translate-y-1/2"></div>
+          <div className="absolute top-1/2 left-1/2 w-40 h-40 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+
           <div className="relative z-10">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                <i className="fas fa-user text-2xl"></i>
+            <div className="flex items-center gap-5 mb-8">
+              <div className="w-18 h-18 bg-white/15 rounded-2xl flex items-center justify-center p-4 backdrop-blur-sm">
+                <User className="w-10 h-10" />
               </div>
               <div>
-                <h1 className="text-2xl font-black">{currentUser.name}</h1>
-                <p className="opacity-80">{currentUser.phone}</p>
+                <h1 className="text-3xl font-black">{currentUser.name}</h1>
+                <p className="text-white/70">{currentUser.phone}</p>
               </div>
             </div>
 
             {/* Points Display */}
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4 mb-4">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-white/10">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm opacity-80">امتیاز فعلی شما</p>
-                  <p className="text-4xl font-black">{currentUser.points}</p>
+                  <p className="text-sm text-white/70 mb-1">امتیاز فعلی شما</p>
+                  <p className="text-5xl font-black">{currentUser.points.toLocaleString('fa-IR')}</p>
                 </div>
-                <div className="text-5xl">⭐</div>
+                <div className="relative">
+                  <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center">
+                    <Coins className="w-10 h-10 text-yellow-300" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-400 rounded-full animate-pulse"></div>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white/10 rounded-xl p-3 text-center">
-                <p className="text-xl font-black">{totalPointsEarned}</p>
-                <p className="text-xs opacity-80">امتیاز کسب شده</p>
-              </div>
-              <div className="bg-white/10 rounded-xl p-3 text-center">
-                <p className="text-xl font-black">{totalWaste} کیلو</p>
-                <p className="text-xs opacity-80">زباله تحویل داده</p>
-              </div>
-              <div className="bg-white/10 rounded-xl p-3 text-center">
-                <p className="text-xl font-black">{myPurchases.length}</p>
-                <p className="text-xs opacity-80">تعداد خرید</p>
-              </div>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { value: totalPointsEarned, label: 'کسب شده', icon: TrendingUp },
+                { value: `${totalWaste} کیلو`, label: 'بازیافت', icon: Recycle },
+                { value: myPurchases.length, label: 'خرید', icon: ShoppingBag },
+              ].map((stat, i) => (
+                <div key={i} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center border border-white/10">
+                  <stat.icon className="w-5 h-5 mx-auto mb-2 text-white/70" />
+                  <p className="text-xl font-black">{stat.value}</p>
+                  <p className="text-xs text-white/60">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <Link
-            to="/shop"
-            className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-center group"
-          >
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:bg-green-200 transition">
-              <i className="fas fa-store text-green-600 text-lg"></i>
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <Link to="/shop" className="group bg-white rounded-2xl p-5 shadow-lg shadow-gray-100 border border-gray-100 card-hover text-center">
+            <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:bg-emerald-200 transition">
+              <Store className="w-7 h-7 text-emerald-600" />
             </div>
-            <p className="font-bold text-gray-800">فروشگاه</p>
-            <p className="text-xs text-gray-500">خرید با امتیاز</p>
+            <p className="font-black text-gray-900">فروشگاه</p>
+            <p className="text-xs text-gray-500 mt-1">خرید با امتیاز</p>
           </Link>
-          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-2">
-              <i className="fas fa-calendar-check text-yellow-600 text-lg"></i>
+          <div className="bg-white rounded-2xl p-5 shadow-lg shadow-gray-100 border border-gray-100 text-center">
+            <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <CalendarCheck className="w-7 h-7 text-amber-600" />
             </div>
-            <p className="font-bold text-gray-800">روز جمع‌آوری</p>
-            <p className="text-xs text-gray-500">منتظر اطلاع‌رسانی باشید</p>
+            <p className="font-black text-gray-900">روز جمع‌آوری</p>
+            <p className="text-xs text-gray-500 mt-1">منتظر اطلاع‌رسانی</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto">
+        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-3 rounded-xl font-medium transition whitespace-nowrap ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300 whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-green-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-green-50'
+                  ? 'bg-gradient-to-l from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/20'
+                  : 'bg-white text-gray-600 hover:bg-emerald-50 border border-gray-100'
               }`}
             >
-              <i className={`${tab.icon} ml-2`}></i>
+              <tab.icon className="w-5 h-5" />
               {tab.label}
             </button>
           ))}
         </div>
 
-        {/* Overview Tab */}
+        {/* Overview */}
         {activeTab === 'overview' && (
-          <div>
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Recent Records */}
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-4">
-                  <i className="fas fa-recycle text-green-600 ml-2"></i>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              <div className="bg-white rounded-2xl p-6 shadow-lg shadow-gray-100 border border-gray-100">
+                <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">
+                  <Recycle className="w-5 h-5 text-emerald-500" />
                   آخرین جمع‌آوری‌ها
                 </h3>
                 <div className="space-y-3">
                   {myRecords.slice(-5).reverse().map((record) => (
-                    <div key={record.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <div key={record.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
                       <div>
-                        <p className="font-medium text-gray-800 text-sm">{record.wasteType}</p>
+                        <p className="font-bold text-gray-800 text-sm">{record.wasteType}</p>
                         <p className="text-xs text-gray-500">{record.date} - {record.weight} کیلو</p>
                       </div>
-                      <span className="text-green-600 font-bold">+{record.pointsAwarded}⭐</span>
+                      <span className="text-emerald-600 font-black text-sm bg-emerald-50 px-3 py-1 rounded-lg">+{record.pointsAwarded}⭐</span>
                     </div>
                   ))}
-                  {myRecords.length === 0 && (
-                    <p className="text-gray-500 text-sm text-center py-4">هنوز زباله‌ای تحویل نداده‌اید</p>
-                  )}
+                  {myRecords.length === 0 && <p className="text-gray-400 text-sm text-center py-4">هنوز زباله‌ای تحویل نداده‌اید</p>}
                 </div>
               </div>
-
-              {/* Recent Purchases */}
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-4">
-                  <i className="fas fa-shopping-bag text-green-600 ml-2"></i>
+              <div className="bg-white rounded-2xl p-6 shadow-lg shadow-gray-100 border border-gray-100">
+                <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 text-emerald-500" />
                   آخرین خریدها
                 </h3>
                 <div className="space-y-3">
                   {myPurchases.slice(-5).reverse().map((purchase) => (
-                    <div key={purchase.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                    <div key={purchase.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-xl">
                       <div>
-                        <p className="font-medium text-gray-800 text-sm">{purchase.productName}</p>
+                        <p className="font-bold text-gray-800 text-sm">{purchase.productName}</p>
                         <p className="text-xs text-gray-500">{purchase.date}</p>
                       </div>
                       <div className="text-left">
-                        <span className="text-red-500 font-bold text-sm">-{purchase.points}⭐</span>
-                        <p className={`text-xs ${purchase.status === 'delivered' ? 'text-green-600' : 'text-yellow-600'}`}>
+                        <span className="text-red-500 font-black text-sm bg-red-50 px-3 py-1 rounded-lg">-{purchase.points}⭐</span>
+                        <p className={`text-xs mt-1 ${purchase.status === 'delivered' ? 'text-emerald-600' : 'text-amber-600'}`}>
                           {purchase.status === 'delivered' ? '✅ تحویل شده' : '⏳ در انتظار'}
                         </p>
                       </div>
                     </div>
                   ))}
-                  {myPurchases.length === 0 && (
-                    <p className="text-gray-500 text-sm text-center py-4">هنوز خریدی نکرده‌اید</p>
-                  )}
+                  {myPurchases.length === 0 && <p className="text-gray-400 text-sm text-center py-4">هنوز خریدی نکرده‌اید</p>}
                 </div>
               </div>
             </div>
 
             {/* Progress */}
-            <div className="bg-white rounded-xl p-6 shadow-sm mt-6">
-              <h3 className="font-bold text-gray-800 mb-4">
-                <i className="fas fa-chart-line text-green-600 ml-2"></i>
+            <div className="bg-white rounded-2xl p-6 shadow-lg shadow-gray-100 border border-gray-100">
+              <h3 className="font-black text-gray-900 mb-6 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-emerald-500" />
                 وضعیت امتیاز شما
               </h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">امتیاز کسب شده</span>
-                    <span className="font-bold text-green-600">{totalPointsEarned}</span>
+              <div className="space-y-5">
+                {[
+                  { label: 'امتیاز کسب شده', value: totalPointsEarned, color: 'bg-emerald-500', max: Math.max(totalPointsEarned, 1) },
+                  { label: 'امتیاز خرج شده', value: totalPointsSpent, color: 'bg-red-400', max: Math.max(totalPointsEarned, 1) },
+                  { label: 'امتیاز موجود', value: currentUser.points, color: 'bg-amber-400', max: Math.max(totalPointsEarned, 1) },
+                ].map((bar, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-600 font-medium">{bar.label}</span>
+                      <span className="font-black text-gray-900">{bar.value.toLocaleString('fa-IR')}</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(bar.value / bar.max) * 100}%` }}
+                        transition={{ duration: 1, delay: i * 0.2 }}
+                        className={`${bar.color} rounded-full h-3`}
+                      ></motion.div>
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-green-500 rounded-full h-3 transition-all"
-                      style={{ width: `${Math.min((totalPointsEarned / Math.max(totalPointsEarned, 1)) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">امتیاز خرج شده</span>
-                    <span className="font-bold text-red-500">{totalPointsSpent}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-red-400 rounded-full h-3 transition-all"
-                      style={{ width: `${totalPointsEarned > 0 ? (totalPointsSpent / totalPointsEarned) * 100 : 0}%` }}
-                    ></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">امتیاز موجود</span>
-                    <span className="font-bold text-yellow-600">{currentUser.points}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-yellow-400 rounded-full h-3 transition-all"
-                      style={{ width: `${totalPointsEarned > 0 ? (currentUser.points / totalPointsEarned) * 100 : 0}%` }}
-                    ></div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* Records Tab */}
+        {/* Records */}
         {activeTab === 'records' && (
-          <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
-              <i className="fas fa-recycle text-green-600 ml-2"></i>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+              <Recycle className="w-5 h-5 text-emerald-600" />
               سوابق جمع‌آوری زباله
             </h2>
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-green-50">
+                  <thead className="bg-gradient-to-l from-emerald-50 to-green-50">
                     <tr>
-                      <th className="text-right p-4 font-bold text-gray-700">تاریخ</th>
-                      <th className="text-right p-4 font-bold text-gray-700">نوع زباله</th>
-                      <th className="text-right p-4 font-bold text-gray-700">وزن</th>
-                      <th className="text-right p-4 font-bold text-gray-700">کارمند</th>
-                      <th className="text-right p-4 font-bold text-gray-700">امتیاز</th>
+                      <th className="text-right p-4 font-bold text-gray-700 text-sm">تاریخ</th>
+                      <th className="text-right p-4 font-bold text-gray-700 text-sm">نوع زباله</th>
+                      <th className="text-right p-4 font-bold text-gray-700 text-sm">وزن</th>
+                      <th className="text-right p-4 font-bold text-gray-700 text-sm">کارمند</th>
+                      <th className="text-right p-4 font-bold text-gray-700 text-sm">امتیاز</th>
                     </tr>
                   </thead>
                   <tbody>
                     {myRecords.map((record) => (
-                      <tr key={record.id} className="border-t hover:bg-gray-50">
+                      <tr key={record.id} className="border-t border-gray-50 hover:bg-emerald-50/30 transition">
                         <td className="p-4 text-gray-600">{record.date}</td>
-                        <td className="p-4 font-medium">{record.wasteType}</td>
+                        <td className="p-4 font-bold text-gray-800">{record.wasteType}</td>
                         <td className="p-4 text-gray-600">{record.weight} کیلو</td>
                         <td className="p-4 text-gray-600">{record.employeeName}</td>
-                        <td className="p-4">
-                          <span className="text-green-600 font-bold">+{record.pointsAwarded}</span>
-                        </td>
+                        <td className="p-4"><span className="text-emerald-600 font-black">+{record.pointsAwarded}</span></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               {myRecords.length === 0 && (
-                <div className="p-12 text-center">
-                  <i className="fas fa-recycle text-4xl text-gray-300 mb-4"></i>
-                  <p className="text-gray-500">هنوز زباله‌ای تحویل نداده‌اید</p>
-                  <p className="text-gray-400 text-sm mt-2">در روزهای جمع‌آوری، زباله‌های خود را تحویل دهید</p>
+                <div className="p-16 text-center">
+                  <Recycle className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                  <p className="text-gray-400 font-bold">هنوز زباله‌ای تحویل نداده‌اید</p>
+                  <p className="text-gray-300 text-sm mt-2">در روزهای جمع‌آوری، زباله‌های خود را تحویل دهید</p>
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* Purchases Tab */}
+        {/* Purchases */}
         {activeTab === 'purchases' && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800">
-                <i className="fas fa-shopping-bag text-green-600 ml-2"></i>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-emerald-600" />
                 خریدهای من
               </h2>
-              <Link to="/shop" className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 transition text-sm">
-                <i className="fas fa-store ml-1"></i>
+              <Link to="/shop" className="flex items-center gap-2 bg-gradient-to-l from-emerald-500 to-green-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-500/20 text-sm">
+                <Store className="w-4 h-4" />
                 فروشگاه
               </Link>
             </div>
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-green-50">
+                  <thead className="bg-gradient-to-l from-emerald-50 to-green-50">
                     <tr>
-                      <th className="text-right p-4 font-bold text-gray-700">محصول</th>
-                      <th className="text-right p-4 font-bold text-gray-700">تاریخ</th>
-                      <th className="text-right p-4 font-bold text-gray-700">امتیاز</th>
-                      <th className="text-right p-4 font-bold text-gray-700">وضعیت</th>
+                      <th className="text-right p-4 font-bold text-gray-700 text-sm">محصول</th>
+                      <th className="text-right p-4 font-bold text-gray-700 text-sm">تاریخ</th>
+                      <th className="text-right p-4 font-bold text-gray-700 text-sm">امتیاز</th>
+                      <th className="text-right p-4 font-bold text-gray-700 text-sm">وضعیت</th>
                     </tr>
                   </thead>
                   <tbody>
                     {myPurchases.map((purchase) => (
-                      <tr key={purchase.id} className="border-t hover:bg-gray-50">
-                        <td className="p-4 font-medium">{purchase.productName}</td>
+                      <tr key={purchase.id} className="border-t border-gray-50 hover:bg-emerald-50/30 transition">
+                        <td className="p-4 font-bold text-gray-800">{purchase.productName}</td>
                         <td className="p-4 text-gray-600">{purchase.date}</td>
-                        <td className="p-4 text-red-500 font-bold">{purchase.points}-</td>
+                        <td className="p-4 text-red-500 font-black">{purchase.points}-</td>
                         <td className="p-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            purchase.status === 'delivered' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                          <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold ${
+                            purchase.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'
                           }`}>
-                            {purchase.status === 'delivered' ? '✅ تحویل شده' : '⏳ در انتظار'}
+                            {purchase.status === 'delivered' ? <><Check className="w-3 h-3" />تحویل شده</> : <><Clock className="w-3 h-3" />در انتظار</>}
                           </span>
                         </td>
                       </tr>
@@ -298,58 +281,51 @@ export default function UserDashboard() {
                 </table>
               </div>
               {myPurchases.length === 0 && (
-                <div className="p-12 text-center">
-                  <i className="fas fa-shopping-bag text-4xl text-gray-300 mb-4"></i>
-                  <p className="text-gray-500">هنوز خریدی نکرده‌اید</p>
-                  <Link to="/shop" className="text-green-600 font-bold hover:underline mt-2 inline-block">
-                    رفتن به فروشگاه ←
+                <div className="p-16 text-center">
+                  <ShoppingBag className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                  <p className="text-gray-400 font-bold">هنوز خریدی نکرده‌اید</p>
+                  <Link to="/shop" className="text-emerald-600 font-bold hover:underline mt-2 inline-flex items-center gap-1">
+                    رفتن به فروشگاه
+                    <ArrowLeft className="w-4 h-4" />
                   </Link>
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* Profile Tab */}
+        {/* Profile */}
         {activeTab === 'profile' && (
-          <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
-              <i className="fas fa-user text-green-600 ml-2"></i>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+              <User className="w-5 h-5 text-emerald-600" />
               اطلاعات پروفایل
             </h2>
-            <div className="bg-white rounded-xl p-6 shadow-sm">
+            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-gray-500">نام و نام خانوادگی</label>
-                    <p className="font-bold text-gray-800 bg-gray-50 p-3 rounded-lg">{currentUser.name}</p>
+                {[
+                  { label: 'نام و نام خانوادگی', value: currentUser.name },
+                  { label: 'ایمیل', value: currentUser.email },
+                  { label: 'شماره تلفن', value: currentUser.phone },
+                  { label: 'آدرس', value: currentUser.address },
+                  { label: 'تاریخ عضویت', value: currentUser.createdAt },
+                ].map((field, i) => (
+                  <div key={i}>
+                    <label className="text-xs text-gray-400 font-bold mb-1 block">{field.label}</label>
+                    <p className="font-bold text-gray-800 bg-gray-50 p-3.5 rounded-xl border border-gray-100">{field.value}</p>
                   </div>
-                  <div>
-                    <label className="text-sm text-gray-500">ایمیل</label>
-                    <p className="font-bold text-gray-800 bg-gray-50 p-3 rounded-lg">{currentUser.email}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">شماره تلفن</label>
-                    <p className="font-bold text-gray-800 bg-gray-50 p-3 rounded-lg">{currentUser.phone}</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-gray-500">آدرس</label>
-                    <p className="font-bold text-gray-800 bg-gray-50 p-3 rounded-lg">{currentUser.address}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">تاریخ عضویت</label>
-                    <p className="font-bold text-gray-800 bg-gray-50 p-3 rounded-lg">{currentUser.createdAt}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-500">امتیاز فعلی</label>
-                    <p className="font-bold text-green-600 bg-green-50 p-3 rounded-lg text-xl">{currentUser.points} ⭐</p>
+                ))}
+                <div>
+                  <label className="text-xs text-gray-400 font-bold mb-1 block">امتیاز فعلی</label>
+                  <div className="flex items-center gap-3 bg-gradient-to-l from-amber-50 to-yellow-50 p-3.5 rounded-xl border border-amber-100">
+                    <Coins className="w-5 h-5 text-amber-500" />
+                    <span className="font-black text-amber-700 text-xl">{currentUser.points.toLocaleString('fa-IR')}</span>
+                    <span className="text-xs text-amber-600">امتیاز</span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
