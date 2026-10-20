@@ -68,34 +68,34 @@ export default function Navbar() {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
               <div className="relative">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-all duration-300 group-hover:scale-110">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/30 group-hover:shadow-primary-500/50 transition-all duration-300 group-hover:scale-110">
                   <Leaf className="w-6 h-6 text-white" strokeWidth={2.5} />
                 </div>
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full animate-pulse"></div>
               </div>
               <div className="hidden sm:block">
                 <span className="text-xl font-black gradient-text">سبز بازیافت</span>
-                <p className="text-[10px] text-gray-500 -mt-1">پلتفرم هوشمند بازیافت</p>
+                <p className="text-xs text-neutral-500 -mt-1">پلتفرم هوشمند بازیافت</p>
               </div>
             </Link>
 
             {/* Desktop Nav */}
-            <div className="hidden lg:flex items-center gap-1">
+            <div className="hidden lg:flex items-center gap-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
                   className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
                     location.pathname === link.to
-                      ? 'text-emerald-700 bg-emerald-50'
-                      : 'text-gray-600 hover:text-emerald-700 hover:bg-emerald-50/50'
+                      ? 'text-primary-700 bg-primary-50'
+                      : 'text-neutral-600 hover:text-primary-700 hover:bg-primary-50/50'
                   }`}
                 >
                   {link.label}
                   {location.pathname === link.to && (
                     <motion.div
                       layoutId="nav-indicator"
-                      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-emerald-500 rounded-full"
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary-500 rounded-full"
                     />
                   )}
                 </Link>
@@ -132,14 +132,14 @@ export default function Navbar() {
                     )}
                   </Link>
 
-                  <div className="flex items-center gap-2 bg-gradient-to-l from-amber-50 to-yellow-50 border border-amber-200/50 px-4 py-2 rounded-2xl">
-                    <Coins className="w-4 h-4 text-amber-500" />
-                    <span className="font-black text-amber-700 text-sm">{currentUser.points.toLocaleString('fa-IR')}</span>
-                    <span className="text-[10px] text-amber-600">امتیاز</span>
+                  <div className="flex items-center gap-2 bg-warning/10 border border-warning/30 px-4 py-2 rounded-2xl">
+                    <Coins className="w-4 h-4 text-warning" />
+                    <span className="font-black text-warning text-sm">{currentUser.points.toLocaleString('fa-IR')}</span>
+                    <span className="text-xs text-warning">امتیاز</span>
                   </div>
                   <Link
                     to={getDashboardLink()}
-                    className="flex items-center gap-2 bg-gradient-to-l from-emerald-500 to-green-600 text-white px-5 py-2.5 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105 transition-all duration-300 btn-shine"
+                    className="btn-primary flex items-center gap-2 text-sm"
                   >
                     <LayoutDashboard className="w-4 h-4" />
                     داشبورد
@@ -155,13 +155,13 @@ export default function Navbar() {
                 <>
                   <Link
                     to="/login"
-                    className="px-5 py-2.5 rounded-2xl text-sm font-bold text-emerald-700 hover:bg-emerald-50 transition-all duration-300"
+                    className="px-5 py-2.5 rounded-xl text-sm font-bold text-primary-700 hover:bg-primary-50 transition-all duration-300"
                   >
                     ورود
                   </Link>
                   <Link
                     to="/register"
-                    className="flex items-center gap-2 bg-gradient-to-l from-emerald-500 to-green-600 text-white px-6 py-2.5 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-105 transition-all duration-300 btn-shine"
+                    className="btn-primary flex items-center gap-2 text-sm"
                   >
                     ثبت‌نام رایگان
                   </Link>
@@ -217,37 +217,37 @@ export default function Navbar() {
             exit={{ opacity: 0, y: -20 }}
             className="fixed inset-x-0 top-20 z-40 lg:hidden"
           >
-            <div className="glass mx-4 rounded-3xl shadow-2xl shadow-emerald-500/10 p-6 space-y-2">
+            <div className="glass mx-4 rounded-3xl shadow-2xl shadow-primary-500/10 p-6 space-y-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`block px-4 py-3 rounded-2xl font-medium transition ${
+                  className={`block px-4 py-3 rounded-xl font-medium transition-base ${
                     location.pathname === link.to
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-neutral-600 hover:bg-neutral-50'
                   }`}
                 >
                   {link.label}
                 </Link>
               ))}
-              <div className="pt-4 border-t border-gray-100 space-y-2">
+              <div className="pt-4 border-t border-neutral-100 space-y-2">
                 {currentUser ? (
                   <>
-                    <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 rounded-2xl">
-                      <Coins className="w-4 h-4 text-amber-500" />
-                      <span className="font-black text-amber-700">{currentUser.points}</span>
-                      <span className="text-xs text-amber-600">امتیاز</span>
+                    <div className="flex items-center gap-2 px-4 py-3 bg-warning/10 rounded-xl">
+                      <Coins className="w-4 h-4 text-warning" />
+                      <span className="font-black text-warning">{currentUser.points}</span>
+                      <span className="text-xs text-warning">امتیاز</span>
                     </div>
                     <Link
                       to={getDashboardLink()}
-                      className="block px-4 py-3 bg-gradient-to-l from-emerald-500 to-green-600 text-white rounded-2xl font-bold text-center"
+                      className="btn-primary block text-center"
                     >
                       داشبورد
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="w-full px-4 py-3 text-red-500 hover:bg-red-50 rounded-2xl font-medium transition text-right"
+                      className="w-full px-4 py-3 text-error hover:bg-error/10 rounded-xl font-medium transition-base text-right"
                     >
                       خروج از حساب
                     </button>
@@ -256,13 +256,13 @@ export default function Navbar() {
                   <>
                     <Link
                       to="/login"
-                      className="block px-4 py-3 text-emerald-700 font-bold text-center"
+                      className="block px-4 py-3 text-primary-700 font-bold text-center"
                     >
                       ورود
                     </Link>
                     <Link
                       to="/register"
-                      className="block px-4 py-3 bg-gradient-to-l from-emerald-500 to-green-600 text-white rounded-2xl font-bold text-center"
+                      className="btn-primary block text-center"
                     >
                       ثبت‌نام رایگان
                     </Link>
