@@ -3,6 +3,8 @@ import { useApp } from '../../context/AppContext';
 import { Navigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, Recycle, ShoppingBag, User, Store, CalendarCheck, TrendingUp, Award, Coins, ArrowLeft, Check, Clock, Calendar, MapPin, Package, TreePine, Leaf, Wind, Trophy, Bell, Share2, Copy, Gift, Star } from 'lucide-react';
+import Breadcrumbs from '../../components/Breadcrumbs';
+import EmptyState from '../../components/EmptyState';
 
 export default function UserDashboard() {
   const { currentUser, users, collectionRecords, collectionRequests, purchases, products, notifications, activities, getUserActivities, getUserLevel, markNotificationRead } = useApp();
@@ -38,11 +40,14 @@ export default function UserDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto p-6">
+        {/* Breadcrumbs */}
+        <Breadcrumbs items={[{ label: 'داشبورد' }]} />
+
         {/* Header Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden bg-gradient-to-bl from-emerald-600 via-green-600 to-teal-600 rounded-3xl p-8 mb-8 text-white"
+          className="relative overflow-hidden bg-gradient-to-bl from-emerald-600 via-green-600 to-teal-600 rounded-3xl p-6 md:p-8 mb-8 text-white"
         >
           <div className="absolute inset-0 noise"></div>
           <div className="absolute top-0 left-0 w-72 h-72 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
@@ -111,21 +116,25 @@ export default function UserDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300 whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-gradient-to-l from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/20'
-                  : 'bg-white text-gray-600 hover:bg-emerald-50 border border-gray-100'
-              }`}
-            >
-              <tab.icon className="w-5 h-5" />
-              {tab.label}
-            </button>
-          ))}
+        <div className="relative mb-8">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all duration-300 whitespace-nowrap min-w-fit ${
+                  activeTab === tab.id
+                    ? 'bg-gradient-to-l from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/20'
+                    : 'bg-white text-gray-600 hover:bg-emerald-50 border border-gray-100'
+                }`}
+              >
+                <tab.icon className="w-5 h-5" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {/* Scroll Indicator */}
+          <div className="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none lg:hidden"></div>
         </div>
 
         {/* Environment Tab */}
@@ -489,14 +498,15 @@ export default function UserDashboard() {
                 </div>
               ))}
               {myRequests.length === 0 && (
-                <div className="bg-white rounded-2xl p-16 text-center shadow-lg">
-                  <Calendar className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                  <p className="text-gray-400 font-bold">هنوز درخواستی ثبت نکرده‌اید</p>
-                  <Link to="/shop" className="text-emerald-600 font-bold hover:underline mt-2 inline-flex items-center gap-1">
-                    رفتن به فروشگاه
-                    <ArrowLeft className="w-4 h-4" />
-                  </Link>
-                </div>
+                <EmptyState
+                  icon={Calendar}
+                  title="هنوز درخواستی ثبت نکرده‌اید"
+                  description="برای ثبت درخواست جمع‌آوری، به فروشگاه بروید"
+                  action={{
+                    label: 'رفتن به فروشگاه',
+                    onClick: () => window.location.href = '/shop',
+                  }}
+                />
               )}
             </div>
           </motion.div>
@@ -535,11 +545,11 @@ export default function UserDashboard() {
                 </table>
               </div>
               {myRecords.length === 0 && (
-                <div className="p-16 text-center">
-                  <Recycle className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                  <p className="text-gray-400 font-bold">هنوز زباله‌ای تحویل نداده‌اید</p>
-                  <p className="text-gray-300 text-sm mt-2">در روزهای جمع‌آوری، زباله‌های خود را تحویل دهید</p>
-                </div>
+                <EmptyState
+                  icon={Recycle}
+                  title="هنوز زباله‌ای تحویل نداده‌اید"
+                  description="در روزهای جمع‌آوری، زباله‌های خود را تحویل دهید"
+                />
               )}
             </div>
           </motion.div>
@@ -588,14 +598,15 @@ export default function UserDashboard() {
                 </table>
               </div>
               {myPurchases.length === 0 && (
-                <div className="p-16 text-center">
-                  <ShoppingBag className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                  <p className="text-gray-400 font-bold">هنوز خریدی نکرده‌اید</p>
-                  <Link to="/shop" className="text-emerald-600 font-bold hover:underline mt-2 inline-flex items-center gap-1">
-                    رفتن به فروشگاه
-                    <ArrowLeft className="w-4 h-4" />
-                  </Link>
-                </div>
+                <EmptyState
+                  icon={ShoppingBag}
+                  title="هنوز خریدی نکرده‌اید"
+                  description="با امتیازهای خود از فروشگاه خرید کنید"
+                  action={{
+                    label: 'رفتن به فروشگاه',
+                    onClick: () => window.location.href = '/shop',
+                  }}
+                />
               )}
             </div>
           </motion.div>
