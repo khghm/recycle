@@ -11,6 +11,38 @@ export interface User {
   phone: string;
   address: string;
   createdAt: string;
+  level: number;
+  badges: string[];
+  totalWasteCollected: number;
+  treesSaved: number;
+  co2Reduced: number;
+  referralCode: string;
+  referredBy?: string;
+}
+
+export interface CartItem {
+  productId: string;
+  quantity: number;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning';
+  read: boolean;
+  createdAt: string;
+}
+
+export interface Activity {
+  id: string;
+  userId: string;
+  type: 'collection' | 'purchase' | 'level_up' | 'badge' | 'referral';
+  title: string;
+  description: string;
+  points?: number;
+  createdAt: string;
 }
 
 export interface Product {
@@ -89,6 +121,9 @@ interface AppContextType {
   collectionRequests: CollectionRequest[];
   collectionRecords: CollectionRecord[];
   purchases: Purchase[];
+  cart: CartItem[];
+  notifications: Notification[];
+  activities: Activity[];
   login: (email: string, password: string) => boolean;
   logout: () => void;
   register: (user: Omit<User, 'id' | 'points' | 'createdAt'>) => boolean;
@@ -106,6 +141,17 @@ interface AppContextType {
   updateCollectionRequest: (id: string, updates: Partial<CollectionRequest>) => void;
   calculateWastePlan: (requiredPoints: number) => WastePlan[];
   calculateCombinations: (requiredPoints: number) => WastePlan[][];
+  addToCart: (productId: string) => void;
+  removeFromCart: (productId: string) => void;
+  updateCartQuantity: (productId: string, quantity: number) => void;
+  clearCart: () => void;
+  getCartTotalPoints: () => number;
+  addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => void;
+  markNotificationRead: (id: string) => void;
+  addActivity: (activity: Omit<Activity, 'id' | 'createdAt'>) => void;
+  getUserActivities: (userId: string) => Activity[];
+  getUserLevel: (points: number) => number;
+  checkAndAwardBadges: (userId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -122,6 +168,12 @@ const initialUsers: User[] = [
     phone: '09123456789',
     address: 'تهران، خیابان ولیعصر',
     createdAt: '2024-01-01',
+    level: 1,
+    badges: [],
+    totalWasteCollected: 0,
+    treesSaved: 0,
+    co2Reduced: 0,
+    referralCode: 'ADMIN001',
   },
   {
     id: '2',
@@ -133,6 +185,12 @@ const initialUsers: User[] = [
     phone: '09123456788',
     address: 'تهران، خیابان انقلاب',
     createdAt: '2024-01-15',
+    level: 1,
+    badges: [],
+    totalWasteCollected: 0,
+    treesSaved: 0,
+    co2Reduced: 0,
+    referralCode: 'EMP001',
   },
   {
     id: '3',
@@ -144,6 +202,12 @@ const initialUsers: User[] = [
     phone: '09123456787',
     address: 'تهران، خیابان آزادی',
     createdAt: '2024-02-01',
+    level: 3,
+    badges: ['first_collection', 'eco_warrior', 'recycling_pro'],
+    totalWasteCollected: 45,
+    treesSaved: 3,
+    co2Reduced: 120,
+    referralCode: 'SARA123',
   },
 ];
 
@@ -372,6 +436,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('gr_purchases');
     return saved ? JSON.parse(saved) : initialPurchases;
   });
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const saved = localStorage.getItem('gr_cart');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    const saved = localStorage.getItem('gr_notifications');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [activities, setActivities] = useState<Activity[]>(() => {
+    const saved = localStorage.getItem('gr_activities');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   useEffect(() => {
     localStorage.setItem('gr_users', JSON.stringify(users));
@@ -396,6 +472,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('gr_purchases', JSON.stringify(purchases));
   }, [purchases]);
+
+  useEffect(() => {
+    localStorage.setItem('gr_cart', JSON.stringify(cart));
+  }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem('gr_notifications', JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem('gr_activities', JSON.stringify(activities));
+  }, [activities]);
 
   const login = (email: string, password: string): boolean => {
     const user = users.find((u) => u.email === email && u.password === password);
@@ -593,6 +681,123 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCollectionRequests(collectionRequests.map((r) => (r.id === id ? { ...r, ...updates } : r)));
   };
 
+  // Cart functions
+  const addToCart = (productId: string) => {
+    const existing = cart.find((item) => item.productId === productId);
+    if (existing) {
+      setCart(cart.map((item) => item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item));
+    } else {
+      setCart([...cart, { productId, quantity: 1 }]);
+    }
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart(cart.filter((item) => item.productId !== productId));
+  };
+
+  const updateCartQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+    } else {
+      setCart(cart.map((item) => item.productId === productId ? { ...item, quantity } : item));
+    }
+  };
+
+  const clearCart = () => setCart([]);
+
+  const getCartTotalPoints = () => {
+    return cart.reduce((total, item) => {
+      const product = products.find((p) => p.id === item.productId);
+      return total + (product ? product.points * item.quantity : 0);
+    }, 0);
+  };
+
+  // Notification functions
+  const addNotification = (notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) => {
+    const newNotification: Notification = {
+      ...notification,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      read: false,
+    };
+    setNotifications([newNotification, ...notifications]);
+  };
+
+  const markNotificationRead = (id: string) => {
+    setNotifications(notifications.map((n) => n.id === id ? { ...n, read: true } : n));
+  };
+
+  // Activity functions
+  const addActivity = (activity: Omit<Activity, 'id' | 'createdAt'>) => {
+    const newActivity: Activity = {
+      ...activity,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+    };
+    setActivities([newActivity, ...activities]);
+  };
+
+  const getUserActivities = (userId: string) => {
+    return activities.filter((a) => a.userId === userId);
+  };
+
+  // Level system
+  const getUserLevel = (points: number) => {
+    if (points >= 5000) return 10;
+    if (points >= 3000) return 9;
+    if (points >= 2000) return 8;
+    if (points >= 1500) return 7;
+    if (points >= 1000) return 6;
+    if (points >= 750) return 5;
+    if (points >= 500) return 4;
+    if (points >= 300) return 3;
+    if (points >= 150) return 2;
+    return 1;
+  };
+
+  // Badge system
+  const checkAndAwardBadges = (userId: string) => {
+    const user = users.find((u) => u.id === userId);
+    if (!user) return;
+
+    const newBadges: string[] = [];
+    const userActivities = activities.filter((a) => a.userId === userId);
+
+    // First collection badge
+    if (userActivities.some((a) => a.type === 'collection') && !user.badges.includes('first_collection')) {
+      newBadges.push('first_collection');
+    }
+
+    // Eco warrior badge (10+ collections)
+    if (userActivities.filter((a) => a.type === 'collection').length >= 10 && !user.badges.includes('eco_warrior')) {
+      newBadges.push('eco_warrior');
+    }
+
+    // Recycling pro badge (50+ kg collected)
+    if (user.totalWasteCollected >= 50 && !user.badges.includes('recycling_pro')) {
+      newBadges.push('recycling_pro');
+    }
+
+    // First purchase badge
+    if (userActivities.some((a) => a.type === 'purchase') && !user.badges.includes('first_purchase')) {
+      newBadges.push('first_purchase');
+    }
+
+    // Level 5 badge
+    if (user.level >= 5 && !user.badges.includes('level_5')) {
+      newBadges.push('level_5');
+    }
+
+    if (newBadges.length > 0) {
+      const updatedUser = { ...user, badges: [...user.badges, ...newBadges] };
+      setUsers(users.map((u) => u.id === userId ? updatedUser : u));
+      if (currentUser?.id === userId) {
+        setCurrentUser(updatedUser);
+        localStorage.setItem('gr_currentUser', JSON.stringify(updatedUser));
+      }
+    }
+  };
+
   // Check for saved session
   useEffect(() => {
     const saved = localStorage.getItem('gr_currentUser');
@@ -630,6 +835,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateCollectionRequest,
         calculateWastePlan,
         calculateCombinations,
+        cart,
+        notifications,
+        activities,
+        addToCart,
+        removeFromCart,
+        updateCartQuantity,
+        clearCart,
+        getCartTotalPoints,
+        addNotification,
+        markNotificationRead,
+        addActivity,
+        getUserActivities,
+        getUserLevel,
+        checkAndAwardBadges,
       }}
     >
       {children}

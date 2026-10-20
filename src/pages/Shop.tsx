@@ -2,13 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { useApp, POINTS_PER_KG } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Coins, Search, Filter, Star, Check, X, AlertTriangle, Recycle, ArrowLeft, Calendar, MapPin } from 'lucide-react';
+import { ShoppingBag, Coins, Search, Filter, Star, Check, X, AlertTriangle, Recycle, ArrowLeft, Calendar, MapPin, Plus, Minus, Trash2 } from 'lucide-react';
 
 export default function Shop() {
-  const { products, currentUser, addPurchase, addCollectionRequest, collectionRequests } = useApp();
+  const { products, currentUser, addPurchase, addCollectionRequest, collectionRequests, cart, addToCart, removeFromCart, updateCartQuantity, getCartTotalPoints, clearCart } = useApp();
   const [selectedCategory, setSelectedCategory] = useState('همه');
   const [showModal, setShowModal] = useState(false);
   const [showWastePlan, setShowWastePlan] = useState(false);
+  const [showCart, setShowCart] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [selectedCombination, setSelectedCombination] = useState(0);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -180,16 +181,33 @@ export default function Shop() {
             محصولات متنوع و با کیفیت در انتظار شماست
           </motion.p>
           {currentUser && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 }}
-              className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-3"
-            >
-              <Coins className="w-5 h-5 text-yellow-300" />
-              <span className="font-black text-xl">{currentUser.points.toLocaleString('fa-IR')}</span>
-              <span className="text-white/60 text-sm">امتیاز موجود</span>
-            </motion.div>
+            <div className="flex items-center gap-4 justify-center flex-wrap">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 }}
+                className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-3"
+              >
+                <Coins className="w-5 h-5 text-yellow-300" />
+                <span className="font-black text-xl">{currentUser.points.toLocaleString('fa-IR')}</span>
+                <span className="text-white/60 text-sm">امتیاز موجود</span>
+              </motion.div>
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4 }}
+                onClick={() => setShowCart(true)}
+                className="relative inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-3 hover:bg-white/20 transition"
+              >
+                <ShoppingBag className="w-5 h-5" />
+                <span className="font-bold">سبد خرید</span>
+                {cart.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold">
+                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                  </span>
+                )}
+              </motion.button>
+            </div>
           )}
         </div>
 
@@ -299,25 +317,40 @@ export default function Shop() {
                     <span className="font-black text-lg gradient-text-gold">{product.points}</span>
                     <span className="text-[10px] text-gray-400">امتیاز</span>
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleBuy(product.id)}
-                    disabled={product.stock <= 0}
-                    className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
-                      product.stock > 0
-                        ? 'bg-gradient-to-l from-emerald-500 to-green-600 text-white shadow-md shadow-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/30'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    {currentUser && currentUser.points >= product.points ? (
-                      <span className="flex items-center gap-1"><ShoppingBag className="w-3.5 h-3.5" />خرید</span>
-                    ) : currentUser ? (
-                      <span className="flex items-center gap-1"><Recycle className="w-3.5 h-3.5" />جمع‌آوری</span>
-                    ) : (
-                      <span>ورود</span>
-                    )}
-                  </motion.button>
+                  <div className="flex gap-2">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => currentUser && addToCart(product.id)}
+                      disabled={product.stock <= 0 || !currentUser}
+                      className={`flex-1 px-3 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
+                        product.stock > 0 && currentUser
+                          ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <Plus className="w-4 h-4 inline" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleBuy(product.id)}
+                      disabled={product.stock <= 0}
+                      className={`flex-1 px-3 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
+                        product.stock > 0
+                          ? 'bg-gradient-to-l from-emerald-500 to-green-600 text-white shadow-md shadow-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/30'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {currentUser && currentUser.points >= product.points ? (
+                        <span className="flex items-center gap-1 justify-center"><ShoppingBag className="w-3.5 h-3.5" />خرید</span>
+                      ) : currentUser ? (
+                        <span className="flex items-center gap-1 justify-center"><Recycle className="w-3.5 h-3.5" />جمع‌آوری</span>
+                      ) : (
+                        <span>ورود</span>
+                      )}
+                    </motion.button>
+                  </div>
                 </div>
                 {currentUser && currentUser.points < product.points && (
                   <div className="mt-2 text-xs text-amber-600 bg-amber-50 rounded-lg px-2 py-1 text-center">
@@ -336,6 +369,124 @@ export default function Shop() {
           </div>
         )}
       </div>
+
+      {/* Cart Modal */}
+      <AnimatePresence>
+        {showCart && currentUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
+            onClick={() => setShowCart(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl my-8"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+                  <ShoppingBag className="w-7 h-7 text-emerald-600" />
+                  سبد خرید
+                </h3>
+                <button onClick={() => setShowCart(false)} className="p-2 rounded-lg hover:bg-gray-100 transition">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {cart.length === 0 ? (
+                <div className="text-center py-12">
+                  <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 font-bold">سبد خرید شما خالی است</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+                    {cart.map((item) => {
+                      const product = products.find((p) => p.id === item.productId);
+                      if (!product) return null;
+                      return (
+                        <div key={item.productId} className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4">
+                          <div className="w-20 h-20 bg-white rounded-xl overflow-hidden shrink-0">
+                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-bold text-gray-900">{product.name}</h4>
+                            <p className="text-sm text-gray-500">{product.points} امتیاز</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => updateCartQuantity(item.productId, item.quantity - 1)}
+                              className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <span className="w-8 text-center font-bold">{item.quantity}</span>
+                            <button
+                              onClick={() => updateCartQuantity(item.productId, item.quantity + 1)}
+                              className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => removeFromCart(item.productId)}
+                              className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition mr-2"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="bg-gradient-to-l from-emerald-50 to-green-50 rounded-2xl p-5 border border-emerald-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-gray-600">مجموع امتیاز مورد نیاز:</span>
+                      <span className="text-2xl font-black text-emerald-700">{getCartTotalPoints()}</span>
+                    </div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-gray-600">امتیاز شما:</span>
+                      <span className="font-bold">{currentUser.points}</span>
+                    </div>
+                    {currentUser.points < getCartTotalPoints() && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700">
+                        شما {getCartTotalPoints() - currentUser.points} امتیاز دیگر نیاز دارید
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => { clearCart(); setShowCart(false); }}
+                      className="flex-1 border-2 border-gray-200 text-gray-700 py-3.5 rounded-2xl font-bold hover:bg-gray-50 transition"
+                    >
+                      خالی کردن سبد
+                    </button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        setShowCart(false);
+                        setShowWastePlan(true);
+                        setSelectedProduct(cart[0]?.productId || null);
+                      }}
+                      disabled={currentUser.points < getCartTotalPoints()}
+                      className="flex-1 bg-gradient-to-l from-emerald-500 to-green-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                    >
+                      <Recycle className="w-5 h-5" />
+                      درخواست جمع‌آوری
+                    </motion.button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Purchase Modal */}
       <AnimatePresence>

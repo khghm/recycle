@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Leaf, LayoutDashboard, LogOut, ShoppingBag, Coins, ChevronDown } from 'lucide-react';
+import { Menu, X, Leaf, LayoutDashboard, LogOut, ShoppingBag, Coins, ChevronDown, Bell } from 'lucide-react';
 
 export default function Navbar() {
-  const { currentUser, logout } = useApp();
+  const { currentUser, logout, cart, notifications } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const unreadNotifications = currentUser ? notifications.filter((n) => n.userId === currentUser.id && !n.read).length : 0;
+  const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -97,6 +100,32 @@ export default function Navbar() {
             <div className="hidden lg:flex items-center gap-3">
               {currentUser ? (
                 <>
+                  {/* Cart Icon */}
+                  <Link
+                    to="/shop"
+                    className="relative p-2.5 rounded-xl text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-300"
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                    {cartItemsCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                        {cartItemsCount}
+                      </span>
+                    )}
+                  </Link>
+
+                  {/* Notifications Icon */}
+                  <Link
+                    to={getDashboardLink()}
+                    className="relative p-2.5 rounded-xl text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-300"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadNotifications > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                        {unreadNotifications}
+                      </span>
+                    )}
+                  </Link>
+
                   <div className="flex items-center gap-2 bg-gradient-to-l from-amber-50 to-yellow-50 border border-amber-200/50 px-4 py-2 rounded-2xl">
                     <Coins className="w-4 h-4 text-amber-500" />
                     <span className="font-black text-amber-700 text-sm">{currentUser.points.toLocaleString('fa-IR')}</span>
