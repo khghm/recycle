@@ -124,6 +124,8 @@ interface AppContextType {
   cart: CartItem[];
   notifications: Notification[];
   activities: Activity[];
+  showCartModal: boolean;
+  setShowCartModal: (show: boolean) => void;
   login: (email: string, password: string) => boolean;
   logout: () => void;
   register: (user: Omit<User, 'id' | 'points' | 'createdAt'>) => boolean;
@@ -202,11 +204,11 @@ const initialUsers: User[] = [
     phone: '09123456787',
     address: 'تهران، خیابان آزادی',
     createdAt: '2024-02-01',
-    level: 3,
-    badges: ['first_collection', 'eco_warrior', 'recycling_pro'],
-    totalWasteCollected: 45,
-    treesSaved: 3,
-    co2Reduced: 120,
+    level: 2,
+    badges: ['first_collection'],
+    totalWasteCollected: 10,
+    treesSaved: 0,
+    co2Reduced: 27,
     referralCode: 'SARA123',
   },
 ];
@@ -398,7 +400,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('gr_users');
-    return saved ? JSON.parse(saved) : initialUsers;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Migration: Add missing environmental fields
+      const migrated = parsed.map((u: User) => ({
+        ...u,
+        level: u.level || 1,
+        badges: u.badges || [],
+        totalWasteCollected: u.totalWasteCollected || 0,
+        treesSaved: u.treesSaved || 0,
+        co2Reduced: u.co2Reduced || 0,
+        referralCode: u.referralCode || (u.name?.substring(0, 4).toUpperCase() + Math.floor(Math.random() * 1000)),
+      }));
+      return migrated;
+    }
+    return initialUsers;
   });
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('gr_products');
@@ -448,6 +464,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('gr_activities');
     return saved ? JSON.parse(saved) : [];
   });
+  const [showCartModal, setShowCartModal] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('gr_users', JSON.stringify(users));
@@ -488,8 +505,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const login = (email: string, password: string): boolean => {
     const user = users.find((u) => u.email === email && u.password === password);
     if (user) {
-      setCurrentUser(user);
-      localStorage.setItem('gr_currentUser', JSON.stringify(user));
+      // Recalculate environmental stats from collection records
+      const userRecords = collectionRecords.filter((r) => r.userId === user.id);
+      const totalWaste = userRecords.reduce((sum, r) => sum + r.weight, 0);
+      const treesSaved = userRecords
+        .filter((r) => r.wasteType === 'کاغذ')
+        .reduce((sum, r) => sum + Math.floor(r.weight / 15), 0);
+      const co2Reduced = Math.round(userRecords.reduce((sum, r) => sum + r.weight * 2.7, 0));
+
+      const updatedUser = {
+        ...user,
+        totalWasteCollected: totalWaste || user.totalWasteCollected,
+        treesSaved: treesSaved || user.treesSaved,
+        co2Reduced: co2Reduced || user.co2Reduced,
+        level: getUserLevel(user.points),
+      };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('gr_currentUser', JSON.stringify(updatedUser));
       return true;
     }
     return false;
@@ -541,15 +573,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addCollectionRecord = (record: Omit<CollectionRecord, 'id'>) => {
     const newRecord: CollectionRecord = { ...record, id: Date.now().toString() };
     setCollectionRecords([...collectionRecords, newRecord]);
-    // Update user points
+    // Update user points and environmental stats
     const user = users.find((u) => u.id === record.userId);
     if (user) {
-      const updatedUser = { ...user, points: user.points + record.pointsAwarded };
+      // محاسبه آمار زیست‌محیطی
+      const newTotalWaste = user.totalWasteCollected + record.weight;
+      // هر 15 کیلو کاغذ = 1 درخت
+      const additionalTrees = record.wasteType === 'کاغذ' ? Math.floor(record.weight / 15) : 0;
+      // هر کیلو زباله بازیافتی = حدود 2.7 کیلو CO2 کاهش
+      const additionalCO2 = Math.round(record.weight * 2.7);
+
+      const updatedUser = {
+        ...user,
+        points: user.points + record.pointsAwarded,
+        totalWasteCollected: newTotalWaste,
+        treesSaved: user.treesSaved + additionalTrees,
+        co2Reduced: user.co2Reduced + additionalCO2,
+        level: getUserLevel(user.points + record.pointsAwarded),
+      };
       setUsers(users.map((u) => (u.id === record.userId ? updatedUser : u)));
       if (currentUser?.id === record.userId) {
         setCurrentUser(updatedUser);
         localStorage.setItem('gr_currentUser', JSON.stringify(updatedUser));
       }
+      // Add activity
+      addActivity({
+        userId: record.userId,
+        type: 'collection',
+        title: `جمع‌آوری ${record.wasteType}`,
+        description: `${record.weight} کیلوگرم ${record.wasteType} جمع‌آوری شد`,
+        points: record.pointsAwarded,
+      });
+      // Check badges
+      checkAndAwardBadges(record.userId);
     }
   };
 
@@ -838,6 +894,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         cart,
         notifications,
         activities,
+        showCartModal,
+        setShowCartModal,
         addToCart,
         removeFromCart,
         updateCartQuantity,
