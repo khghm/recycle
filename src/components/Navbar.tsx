@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Leaf, LayoutDashboard, LogOut, ShoppingBag, Coins, ChevronDown, Bell } from 'lucide-react';
 
 export default function Navbar() {
-  const { currentUser, logout, cart, notifications } = useApp();
+  const { currentUser, logout, cart, notifications, setShowCartModal } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
@@ -101,8 +101,8 @@ export default function Navbar() {
               {currentUser ? (
                 <>
                   {/* Cart Icon */}
-                  <Link
-                    to="/shop"
+                  <button
+                    onClick={() => setShowCartModal(true)}
                     className="relative p-2.5 rounded-xl text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 transition-all duration-300"
                   >
                     <ShoppingBag className="w-5 h-5" />
@@ -111,7 +111,7 @@ export default function Navbar() {
                         {cartItemsCount}
                       </span>
                     )}
-                  </Link>
+                  </button>
 
                   {/* Notifications Icon */}
                   <Link

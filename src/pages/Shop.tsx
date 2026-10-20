@@ -5,11 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Coins, Search, Filter, Star, Check, X, AlertTriangle, Recycle, ArrowLeft, Calendar, MapPin, Plus, Minus, Trash2 } from 'lucide-react';
 
 export default function Shop() {
-  const { products, currentUser, addPurchase, addCollectionRequest, collectionRequests, cart, addToCart, removeFromCart, updateCartQuantity, getCartTotalPoints, clearCart } = useApp();
+  const { products, currentUser, addPurchase, addCollectionRequest, collectionRequests, cart, addToCart, removeFromCart, updateCartQuantity, getCartTotalPoints, clearCart, showCartModal, setShowCartModal } = useApp();
   const [selectedCategory, setSelectedCategory] = useState('همه');
   const [showModal, setShowModal] = useState(false);
   const [showWastePlan, setShowWastePlan] = useState(false);
-  const [showCart, setShowCart] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [selectedCombination, setSelectedCombination] = useState(0);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -196,7 +195,7 @@ export default function Shop() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 }}
-                onClick={() => setShowCart(true)}
+                onClick={() => setShowCartModal(true)}
                 className="relative inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-3 hover:bg-white/20 transition"
               >
                 <ShoppingBag className="w-5 h-5" />
@@ -372,13 +371,13 @@ export default function Shop() {
 
       {/* Cart Modal */}
       <AnimatePresence>
-        {showCart && currentUser && (
+        {showCartModal && currentUser && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
-            onClick={() => setShowCart(false)}
+            onClick={() => setShowCartModal(false)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -392,7 +391,7 @@ export default function Shop() {
                   <ShoppingBag className="w-7 h-7 text-emerald-600" />
                   سبد خرید
                 </h3>
-                <button onClick={() => setShowCart(false)} className="p-2 rounded-lg hover:bg-gray-100 transition">
+                <button onClick={() => setShowCartModal(false)} className="p-2 rounded-lg hover:bg-gray-100 transition">
                   <X className="w-6 h-6" />
                 </button>
               </div>
@@ -461,7 +460,7 @@ export default function Shop() {
 
                   <div className="flex gap-3 mt-6">
                     <button
-                      onClick={() => { clearCart(); setShowCart(false); }}
+                      onClick={() => { clearCart(); setShowCartModal(false); }}
                       className="flex-1 border-2 border-gray-200 text-gray-700 py-3.5 rounded-2xl font-bold hover:bg-gray-50 transition"
                     >
                       خالی کردن سبد
@@ -470,7 +469,7 @@ export default function Shop() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
-                        setShowCart(false);
+                        setShowCartModal(false);
                         setShowWastePlan(true);
                         setSelectedProduct(cart[0]?.productId || null);
                       }}
