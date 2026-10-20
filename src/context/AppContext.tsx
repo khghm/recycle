@@ -93,7 +93,9 @@ interface AppContextType {
   logout: () => void;
   register: (user: Omit<User, 'id' | 'points' | 'createdAt'>) => boolean;
   addProduct: (product: Omit<Product, 'id'>) => void;
+  updateProduct: (id: string, product: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
+  updateUser: (id: string, updates: Partial<User>) => void;
   addCollectionDay: (day: Omit<CollectionDay, 'id'>) => void;
   updateCollectionDay: (id: string, updates: Partial<CollectionDay>) => void;
   addCollectionRecord: (record: Omit<CollectionRecord, 'id'>) => void;
@@ -427,8 +429,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setProducts([...products, newProduct]);
   };
 
+  const updateProduct = (id: string, updates: Partial<Product>) => {
+    setProducts(products.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  };
+
   const deleteProduct = (id: string) => {
     setProducts(products.filter((p) => p.id !== id));
+  };
+
+  const updateUser = (id: string, updates: Partial<User>) => {
+    setUsers(users.map((u) => (u.id === id ? { ...u, ...updates } : u)));
   };
 
   const addCollectionDay = (day: Omit<CollectionDay, 'id'>) => {
@@ -607,6 +617,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logout,
         register,
         addProduct,
+        updateProduct,
+        updateUser,
         deleteProduct,
         addCollectionDay,
         updateCollectionDay,
