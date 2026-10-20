@@ -24,11 +24,17 @@ export default function Shop() {
 
   const selectedProductData = products.find((p) => p.id === selectedProduct);
   
-  // محاسبه امتیاز مورد نیاز
+  // Fix #3: محاسبه امتیاز مورد نیاز برای کل سبد خرید یا یک محصول
   const requiredPoints = useMemo(() => {
-    if (!selectedProductData || !currentUser) return 0;
+    if (!currentUser) return 0;
+    // اگر سبد خرید آیتم دارد، از مجموع سبد استفاده کن
+    if (cart.length > 0) {
+      return Math.max(0, getCartTotalPoints() - currentUser.points);
+    }
+    // در غیر این صورت از محصول انتخاب شده
+    if (!selectedProductData) return 0;
     return Math.max(0, selectedProductData.points - currentUser.points);
-  }, [selectedProductData, currentUser]);
+  }, [selectedProductData, currentUser, cart, getCartTotalPoints]);
 
   // محاسبه برنامه زباله
   const wastePlan = useMemo(() => {
@@ -127,22 +133,63 @@ export default function Shop() {
   };
 
   const handleRequestCollection = () => {
-    if (!currentUser || !selectedProductData) return;
+    if (!currentUser) return;
+    
+    // Fix #5: Check if user already has enough points
+    if (currentUser.points >= requiredPoints) {
+      setMessage({ text: 'شما امتیاز کافی دارید! مستقیماً خرید کنید.', type: 'error' });
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+
     const selectedCombo = combinations[selectedCombination] || wastePlan;
     
-    addCollectionRequest({
-      userId: currentUser.id,
-      userName: currentUser.name,
-      userPhone: currentUser.phone,
-      userAddress: currentUser.address,
-      productId: selectedProductData.id,
-      productName: selectedProductData.name,
-      requiredPoints: requiredPoints,
-      wastePlan: selectedCombo,
-    });
+    // Fix #2: Handle cart or single product
+    if (cart.length > 0) {
+      // Fix #1: Create request for entire cart
+      const productNames = cart.map(item => {
+        const product = products.find(p => p.id === item.productId);
+        return product ? `${product.name} (${item.quantity}x)` : '';
+      }).filter(Boolean).join('، ');
 
-    setMessage({ text: 'درخواست جمع‌آوری با موفقیت ثبت شد!', type: 'success' });
-    setShowWastePlan(false);
+      const success = addCollectionRequest({
+        userId: currentUser.id,
+        userName: currentUser.name,
+        userPhone: currentUser.phone,
+        userAddress: currentUser.address,
+        productId: cart[0].productId, // Primary product
+        productName: productNames || 'محصولات سبد خرید',
+        requiredPoints: requiredPoints,
+        wastePlan: selectedCombo,
+      });
+
+      if (success) {
+        setMessage({ text: 'درخواست جمع‌آوری برای کل سبد خرید ثبت شد!', type: 'success' });
+        setShowWastePlan(false);
+      } else {
+        setMessage({ text: 'درخواست تکراری است یا امتیاز کافی دارید!', type: 'error' });
+      }
+    } else if (selectedProductData) {
+      // Single product request
+      const success = addCollectionRequest({
+        userId: currentUser.id,
+        userName: currentUser.name,
+        userPhone: currentUser.phone,
+        userAddress: currentUser.address,
+        productId: selectedProductData.id,
+        productName: selectedProductData.name,
+        requiredPoints: requiredPoints,
+        wastePlan: selectedCombo,
+      });
+
+      if (success) {
+        setMessage({ text: 'درخواست جمع‌آوری با موفقیت ثبت شد!', type: 'success' });
+        setShowWastePlan(false);
+      } else {
+        setMessage({ text: 'درخواست تکراری است یا امتیاز کافی دارید!', type: 'error' });
+      }
+    }
+
     setTimeout(() => setMessage(null), 3000);
   };
 
