@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Navigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, Recycle, ShoppingBag, User, Store, CalendarCheck, TrendingUp, Award, Coins, ArrowLeft, Check, Clock, Calendar, MapPin, Package } from 'lucide-react';
+import { Home, Recycle, ShoppingBag, User, Store, CalendarCheck, TrendingUp, Award, Coins, ArrowLeft, Check, Clock, Calendar, MapPin, Package, TreePine, Leaf, Wind, Trophy, Bell, Share2, Copy, Gift, Star } from 'lucide-react';
 
 export default function UserDashboard() {
-  const { currentUser, collectionRecords, collectionRequests, purchases, products } = useApp();
+  const { currentUser, users, collectionRecords, collectionRequests, purchases, products, notifications, activities, getUserActivities, getUserLevel, markNotificationRead } = useApp();
   const [activeTab, setActiveTab] = useState('overview');
 
   if (!currentUser || currentUser.role !== 'user') return <Navigate to="/login" />;
@@ -13,15 +13,25 @@ export default function UserDashboard() {
   const myRecords = collectionRecords.filter((r) => r.userId === currentUser.id);
   const myPurchases = purchases.filter((p) => p.userId === currentUser.id);
   const myRequests = collectionRequests.filter((r) => r.userId === currentUser.id);
+  const myActivities = getUserActivities(currentUser.id);
+  const myNotifications = notifications.filter((n) => n.userId === currentUser.id);
   const totalPointsEarned = myRecords.reduce((sum, r) => sum + r.pointsAwarded, 0);
   const totalPointsSpent = myPurchases.reduce((sum, p) => sum + p.points, 0);
   const totalWaste = myRecords.reduce((sum, r) => sum + r.weight, 0);
 
+  // Leaderboard - top users by points
+  const leaderboard = users
+    .filter((u) => u.role === 'user')
+    .sort((a, b) => b.points - a.points)
+    .slice(0, 10);
+
   const tabs = [
     { id: 'overview', label: 'نمای کلی', icon: Home },
+    { id: 'environment', label: 'تأثیر زیست‌محیطی', icon: Recycle },
     { id: 'requests', label: 'درخواست‌ها', icon: Calendar },
     { id: 'records', label: 'سوابق', icon: Recycle },
     { id: 'purchases', label: 'خریدها', icon: ShoppingBag },
+    { id: 'activity', label: 'فعالیت‌ها', icon: Calendar },
     { id: 'profile', label: 'پروفایل', icon: User },
   ];
 
@@ -118,9 +128,212 @@ export default function UserDashboard() {
           ))}
         </div>
 
+        {/* Environment Tab */}
+        {activeTab === 'environment' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+              <TreePine className="w-5 h-5 text-emerald-600" />
+              تأثیر زیست‌محیطی شما
+            </h2>
+
+            {/* Environmental Stats */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
+                <Recycle className="w-10 h-10 mb-3 opacity-80" />
+                <p className="text-4xl font-black">{currentUser.totalWasteCollected}</p>
+                <p className="text-sm opacity-80 mt-1">کیلوگرم زباله بازیافت شده</p>
+                <p className="text-xs opacity-60 mt-2">معادل {(currentUser.totalWasteCollected * 0.3).toFixed(1)} کیلوگرم مواد خام حفظ شده</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg">
+                <TreePine className="w-10 h-10 mb-3 opacity-80" />
+                <p className="text-4xl font-black">{currentUser.treesSaved}</p>
+                <p className="text-sm opacity-80 mt-1">درخت نجات داده شده</p>
+                <p className="text-xs opacity-60 mt-2">هر 15 کیلو کاغذ = 1 درخت</p>
+              </div>
+              <div className="bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl p-6 text-white shadow-lg">
+                <Wind className="w-10 h-10 mb-3 opacity-80" />
+                <p className="text-4xl font-black">{currentUser.co2Reduced}</p>
+                <p className="text-sm opacity-80 mt-1">کیلوگرم CO2 کاهش یافته</p>
+                <p className="text-xs opacity-60 mt-2">معادل {(currentUser.co2Reduced / 10).toFixed(1)} لیتر بنزین</p>
+              </div>
+            </div>
+
+            {/* Level Progress */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6">
+              <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">
+                <Star className="w-5 h-5 text-amber-500" />
+                سطح و پیشرفت شما
+              </h3>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-lg">
+                  {currentUser.level}
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-gray-900">سطح {currentUser.level}</p>
+                  <p className="text-sm text-gray-500">
+                    {currentUser.level < 10 ? `${500 * currentUser.level - currentUser.points} امتیاز تا سطح بعدی` : 'حداکثر سطح!'}
+                  </p>
+                </div>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                <div
+                  className="bg-gradient-to-l from-amber-400 to-orange-500 h-3 rounded-full transition-all"
+                  style={{ width: `${Math.min((currentUser.points / (500 * currentUser.level)) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Badges */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+              <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">
+                <Award className="w-5 h-5 text-purple-500" />
+                نشان‌های شما
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                  { id: 'first_collection', name: 'اولین جمع‌آوری', icon: Recycle, color: 'from-emerald-400 to-green-500' },
+                  { id: 'eco_warrior', name: 'جنگجوی محیط زیست', icon: Leaf, color: 'from-green-400 to-emerald-500' },
+                  { id: 'recycling_pro', name: 'حرفه‌ای بازیافت', icon: Trophy, color: 'from-amber-400 to-orange-500' },
+                  { id: 'first_purchase', name: 'اولین خرید', icon: ShoppingBag, color: 'from-blue-400 to-indigo-500' },
+                  { id: 'level_5', name: 'سطح 5', icon: Star, color: 'from-purple-400 to-pink-500' },
+                ].map((badge) => {
+                  const earned = currentUser.badges.includes(badge.id);
+                  return (
+                    <div key={badge.id} className={`rounded-xl p-4 text-center ${earned ? `bg-gradient-to-br ${badge.color} text-white` : 'bg-gray-100 text-gray-400'}`}>
+                      <badge.icon className="w-8 h-8 mx-auto mb-2" />
+                      <p className="font-bold text-sm">{badge.name}</p>
+                      {!earned && <p className="text-xs mt-1">قفل شده</p>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Activity Tab */}
+        {activeTab === 'activity' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-emerald-600" />
+              تاریخچه فعالیت‌ها
+            </h2>
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+              {myActivities.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                  <p className="text-gray-400 font-bold">هنوز فعالیتی ثبت نشده</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {myActivities.slice(0, 20).map((activity) => (
+                    <div key={activity.id} className="flex items-start gap-4 pb-4 border-b border-gray-100 last:border-0">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        activity.type === 'collection' ? 'bg-emerald-100 text-emerald-600' :
+                        activity.type === 'purchase' ? 'bg-blue-100 text-blue-600' :
+                        activity.type === 'level_up' ? 'bg-amber-100 text-amber-600' :
+                        activity.type === 'badge' ? 'bg-purple-100 text-purple-600' :
+                        'bg-pink-100 text-pink-600'
+                      }`}>
+                        {activity.type === 'collection' ? <Recycle className="w-5 h-5" /> :
+                         activity.type === 'purchase' ? <ShoppingBag className="w-5 h-5" /> :
+                         activity.type === 'level_up' ? <TrendingUp className="w-5 h-5" /> :
+                         activity.type === 'badge' ? <Award className="w-5 h-5" /> :
+                         <Gift className="w-5 h-5" />}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-gray-900">{activity.title}</p>
+                        <p className="text-sm text-gray-500">{activity.description}</p>
+                        <p className="text-xs text-gray-400 mt-1">{new Date(activity.createdAt).toLocaleDateString('fa-IR')}</p>
+                      </div>
+                      {activity.points && (
+                        <span className="text-emerald-600 font-bold">+{activity.points}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {/* Overview */}
         {activeTab === 'overview' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            {/* Notifications */}
+            {myNotifications.filter(n => !n.read).length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
+                <h3 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
+                  <Bell className="w-5 h-5" />
+                  اعلان‌های جدید ({myNotifications.filter(n => !n.read).length})
+                </h3>
+                <div className="space-y-2">
+                  {myNotifications.filter(n => !n.read).slice(0, 3).map((notification) => (
+                    <div key={notification.id} className="bg-white rounded-xl p-3 flex items-center justify-between">
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">{notification.title}</p>
+                        <p className="text-xs text-gray-500">{notification.message}</p>
+                      </div>
+                      <button
+                        onClick={() => markNotificationRead(notification.id)}
+                        className="text-xs text-emerald-600 font-bold hover:underline"
+                      >
+                        خواندم
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Referral Section */}
+            <div className="bg-gradient-to-l from-purple-500 to-pink-500 rounded-2xl p-6 mb-6 text-white">
+              <div className="flex items-center gap-3 mb-4">
+                <Share2 className="w-8 h-8" />
+                <div>
+                  <h3 className="font-black text-lg">دوستانتان را دعوت کنید!</h3>
+                  <p className="text-sm opacity-80">با هر دعوت 50 امتیاز دریافت کنید</p>
+                </div>
+              </div>
+              <div className="bg-white/20 backdrop-blur rounded-xl p-3 flex items-center justify-between">
+                <code className="text-lg font-mono font-bold">{currentUser.referralCode}</code>
+                <button
+                  onClick={() => navigator.clipboard.writeText(currentUser.referralCode)}
+                  className="bg-white text-purple-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-purple-50 transition flex items-center gap-1"
+                >
+                  <Copy className="w-4 h-4" />
+                  کپی
+                </button>
+              </div>
+            </div>
+
+            {/* Leaderboard */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6">
+              <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                جدول رتبه‌بندی
+              </h3>
+              <div className="space-y-2">
+                {leaderboard.map((user, index) => (
+                  <div key={user.id} className={`flex items-center gap-3 p-3 rounded-xl ${user.id === currentUser.id ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${
+                      index === 0 ? 'bg-amber-400 text-white' :
+                      index === 1 ? 'bg-gray-300 text-white' :
+                      index === 2 ? 'bg-orange-400 text-white' :
+                      'bg-gray-200 text-gray-600'
+                    }`}>
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-gray-900 text-sm">{user.name}</p>
+                      <p className="text-xs text-gray-500">سطح {user.level}</p>
+                    </div>
+                    <span className="font-black text-emerald-600">{user.points}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-2 gap-6 mb-6">
               <div className="bg-white rounded-2xl p-6 shadow-lg shadow-gray-100 border border-gray-100">
                 <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">

@@ -26,6 +26,8 @@ export default function Register() {
     const success = register({
       name: formData.name, email: formData.email, password: formData.password,
       role: 'user', phone: formData.phone, address: formData.address,
+      level: 1, badges: [], totalWasteCollected: 0, treesSaved: 0, co2Reduced: 0,
+      referralCode: formData.name.substring(0, 4).toUpperCase() + Math.floor(Math.random() * 1000),
     });
     if (success) navigate('/login');
     else setError('این ایمیل قبلاً ثبت شده است');
