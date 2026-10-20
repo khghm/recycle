@@ -5,12 +5,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, Users, UserCheck, Package, Truck, ClipboardList, ShoppingBag, Plus, Trash2, Check, X, Leaf, TrendingUp, Award, Recycle, Calendar, Bell, Clock, MapPin } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const { currentUser, users, products, collectionDays, collectionRequests, collectionRecords, purchases, addCollectionDay, addProduct, deleteProduct, updatePurchase, updateCollectionDay, updateCollectionRequest } = useApp();
+  const { currentUser, users, products, collectionDays, collectionRequests, collectionRecords, purchases, addCollectionDay, addProduct, updateProduct, updateUser, deleteProduct, updatePurchase, updateCollectionDay, updateCollectionRequest } = useApp();
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddDay, setShowAddDay] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [editingDay, setEditingDay] = useState<string | null>(null);
+  const [editingEmployee, setEditingEmployee] = useState<string | null>(null);
   const [newProduct, setNewProduct] = useState({ name: '', description: '', points: 0, image: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=400&fit=crop', category: '', stock: 0 });
   const [newDay, setNewDay] = useState({ jYear: '', jMonth: '', jDay: '', hour: '', minute: '', employeeId: '', area: '' });
+  const [editEmployeeData, setEditEmployeeData] = useState({ name: '', phone: '', address: '' });
 
   if (!currentUser || currentUser.role !== 'admin') return <Navigate to="/login" />;
 
@@ -21,20 +25,88 @@ export default function AdminDashboard() {
 
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    addProduct(newProduct);
+    if (editingProduct) {
+      updateProduct(editingProduct, newProduct);
+      setEditingProduct(null);
+    } else {
+      addProduct(newProduct);
+    }
     setNewProduct({ name: '', description: '', points: 0, image: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=400&fit=crop', category: '', stock: 0 });
     setShowAddProduct(false);
+  };
+
+  const handleEditProduct = (productId: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (product) {
+      setNewProduct({
+        name: product.name,
+        description: product.description,
+        points: product.points,
+        image: product.image,
+        category: product.category,
+        stock: product.stock,
+      });
+      setEditingProduct(productId);
+      setShowAddProduct(true);
+    }
+  };
+
+  const handleEditDay = (dayId: string) => {
+    const day = collectionDays.find((d) => d.id === dayId);
+    if (day) {
+      // Parse date format: "1403/01/25 - 09:00"
+      const [datePart, timePart] = day.date.split(' - ');
+      const [jYear, jMonth, jDay] = datePart.split('/');
+      const [hour, minute] = timePart.split(':');
+      setNewDay({ jYear, jMonth, jDay, hour, minute, employeeId: day.employeeId, area: day.area });
+      setEditingDay(dayId);
+      setShowAddDay(true);
+    }
+  };
+
+  const handleUpdateDay = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingDay) {
+      const emp = employees.find((emp) => emp.id === newDay.employeeId);
+      if (emp && newDay.jYear && newDay.jMonth && newDay.jDay && newDay.hour && newDay.minute) {
+        const jDate = `${newDay.jYear}/${newDay.jMonth.padStart(2, '0')}/${newDay.jDay.padStart(2, '0')} - ${newDay.hour}:${newDay.minute}`;
+        updateCollectionDay(editingDay, { date: jDate, employeeId: emp.id, employeeName: emp.name, area: newDay.area });
+        setEditingDay(null);
+        setNewDay({ jYear: '', jMonth: '', jDay: '', hour: '', minute: '', employeeId: '', area: '' });
+        setShowAddDay(false);
+      }
+    }
+  };
+
+  const handleEditEmployee = (employeeId: string) => {
+    const employee = users.find((u) => u.id === employeeId);
+    if (employee) {
+      setEditEmployeeData({ name: employee.name, phone: employee.phone, address: employee.address });
+      setEditingEmployee(employeeId);
+    }
+  };
+
+  const handleUpdateEmployee = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingEmployee) {
+      updateUser(editingEmployee, editEmployeeData);
+      setEditingEmployee(null);
+      setEditEmployeeData({ name: '', phone: '', address: '' });
+    }
   };
 
   const handleAddDay = (e: React.FormEvent) => {
     e.preventDefault();
     const emp = employees.find((emp) => emp.id === newDay.employeeId);
     if (emp && newDay.jYear && newDay.jMonth && newDay.jDay && newDay.hour && newDay.minute) {
-      // تبدیل به فرمت شمسی با ساعت و دقیقه
       const jDate = `${newDay.jYear}/${newDay.jMonth.padStart(2, '0')}/${newDay.jDay.padStart(2, '0')} - ${newDay.hour}:${newDay.minute}`;
-      addCollectionDay({ date: jDate, employeeId: emp.id, employeeName: emp.name, area: newDay.area, status: 'scheduled' });
-      setNewDay({ jYear: '', jMonth: '', jDay: '', hour: '', minute: '', employeeId: '', area: '' });
-      setShowAddDay(false);
+      if (editingDay) {
+        handleUpdateDay(e);
+      } else {
+        addCollectionDay({ date: jDate, employeeId: emp.id, employeeName: emp.name, area: newDay.area, status: 'scheduled' });
+        setNewDay({ jYear: '', jMonth: '', jDay: '', hour: '', minute: '', employeeId: '', area: '' });
+        setShowAddDay(false);
+      }
     }
   };
 
@@ -321,14 +393,21 @@ export default function AdminDashboard() {
                       const empRecords = collectionRecords.filter((r) => r.employeeId === emp.id);
                       return (
                         <div key={emp.id} className="bg-white rounded-2xl p-6 shadow-lg shadow-gray-100 border border-gray-100 card-hover">
-                          <div className="flex items-center gap-4 mb-5">
-                            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-                              <UserCheck className="w-7 h-7 text-white" />
+                          <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-4">
+                              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                <UserCheck className="w-7 h-7 text-white" />
+                              </div>
+                              <div>
+                                <h3 className="font-black text-gray-900">{emp.name}</h3>
+                                <p className="text-sm text-gray-500">{emp.phone}</p>
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="font-black text-gray-900">{emp.name}</h3>
-                              <p className="text-sm text-gray-500">{emp.phone}</p>
-                            </div>
+                            <button onClick={() => handleEditEmployee(emp.id)} className="p-2 rounded-lg text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition" title="ویرایش">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
                           </div>
                           <div className="grid grid-cols-3 gap-3">
                             <div className="bg-emerald-50 p-3 rounded-xl text-center">
@@ -344,6 +423,52 @@ export default function AdminDashboard() {
                               <p className="font-black text-purple-700 text-lg">{empRecords.reduce((s, r) => s + r.weight, 0)}</p>
                             </div>
                           </div>
+
+                          {/* Edit Employee Modal */}
+                          <AnimatePresence>
+                            {editingEmployee === emp.id && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden mt-4"
+                              >
+                                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                  <h4 className="font-bold text-gray-900 mb-3">ویرایش اطلاعات کارمند</h4>
+                                  <form onSubmit={handleUpdateEmployee} className="space-y-3">
+                                    <input
+                                      type="text"
+                                      placeholder="نام"
+                                      value={editEmployeeData.name}
+                                      onChange={(e) => setEditEmployeeData({ ...editEmployeeData, name: e.target.value })}
+                                      className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition"
+                                      required
+                                    />
+                                    <input
+                                      type="text"
+                                      placeholder="شماره تلفن"
+                                      value={editEmployeeData.phone}
+                                      onChange={(e) => setEditEmployeeData({ ...editEmployeeData, phone: e.target.value })}
+                                      className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition"
+                                      required
+                                    />
+                                    <input
+                                      type="text"
+                                      placeholder="آدرس"
+                                      value={editEmployeeData.address}
+                                      onChange={(e) => setEditEmployeeData({ ...editEmployeeData, address: e.target.value })}
+                                      className="w-full border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition"
+                                      required
+                                    />
+                                    <div className="flex gap-2">
+                                      <button type="submit" className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-emerald-700 transition">بروزرسانی</button>
+                                      <button type="button" onClick={() => { setEditingEmployee(null); setEditEmployeeData({ name: '', phone: '', address: '' }); }} className="flex-1 border-2 border-gray-200 px-4 py-2 rounded-xl font-bold hover:bg-gray-50 transition">انصراف</button>
+                                    </div>
+                                  </form>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       );
                     })}
@@ -381,7 +506,7 @@ export default function AdminDashboard() {
                         className="overflow-hidden mb-6"
                       >
                         <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-                          <h3 className="font-black text-gray-900 mb-4">محصول جدید</h3>
+                          <h3 className="font-black text-gray-900 mb-4">{editingProduct ? 'ویرایش محصول' : 'محصول جدید'}</h3>
                           <form onSubmit={handleAddProduct} className="grid md:grid-cols-2 gap-4">
                             <input type="text" placeholder="نام محصول" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} className="border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required />
                             <input type="text" placeholder="ایموجی" value={newProduct.image} onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })} className="border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" />
@@ -390,8 +515,8 @@ export default function AdminDashboard() {
                             <input type="number" placeholder="موجودی" value={newProduct.stock || ''} onChange={(e) => setNewProduct({ ...newProduct, stock: parseInt(e.target.value) || 0 })} className="border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required />
                             <input type="text" placeholder="توضیحات" value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} className="border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" />
                             <div className="md:col-span-2 flex gap-3">
-                              <button type="submit" className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition">ذخیره</button>
-                              <button type="button" onClick={() => setShowAddProduct(false)} className="border-2 border-gray-200 px-6 py-2.5 rounded-xl font-bold hover:bg-gray-50 transition">انصراف</button>
+                              <button type="submit" className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition">{editingProduct ? 'بروزرسانی' : 'ذخیره'}</button>
+                              <button type="button" onClick={() => { setShowAddProduct(false); setEditingProduct(null); setNewProduct({ name: '', description: '', points: 0, image: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=400&fit=crop', category: '', stock: 0 }); }} className="border-2 border-gray-200 px-6 py-2.5 rounded-xl font-bold hover:bg-gray-50 transition">انصراف</button>
                             </div>
                           </form>
                         </div>
@@ -406,9 +531,16 @@ export default function AdminDashboard() {
                           <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50">
                             <img src={product.image} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           </div>
-                          <button onClick={() => deleteProduct(product.id)} className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="flex gap-1">
+                            <button onClick={() => handleEditProduct(product.id)} className="p-2 rounded-lg text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition" title="ویرایش">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                            <button onClick={() => deleteProduct(product.id)} className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition" title="حذف">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         <h3 className="font-black text-gray-900">{product.name}</h3>
                         <p className="text-sm text-gray-500 mb-3">{product.category}</p>
@@ -452,7 +584,7 @@ export default function AdminDashboard() {
                         className="overflow-hidden mb-6"
                       >
                         <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-                          <h3 className="font-black text-gray-900 mb-4">تعیین روز جمع‌آوری جدید (تاریخ شمسی)</h3>
+                          <h3 className="font-black text-gray-900 mb-4">{editingDay ? 'ویرایش روز جمع‌آوری' : 'تعیین روز جمع‌آوری جدید (تاریخ شمسی)'}</h3>
                           <form onSubmit={handleAddDay} className="space-y-4">
                             <div className="grid grid-cols-3 gap-3">
                               <div>
@@ -486,8 +618,8 @@ export default function AdminDashboard() {
                               <input type="text" placeholder="منطقه" value={newDay.area} onChange={(e) => setNewDay({ ...newDay, area: e.target.value })} className="border-2 border-gray-100 rounded-xl p-3 focus:border-emerald-500 focus:outline-none transition" required />
                             </div>
                             <div className="flex gap-3">
-                              <button type="submit" className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition">ذخیره</button>
-                              <button type="button" onClick={() => setShowAddDay(false)} className="border-2 border-gray-200 px-6 py-2.5 rounded-xl font-bold hover:bg-gray-50 transition">انصراف</button>
+                              <button type="submit" className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition">{editingDay ? 'بروزرسانی' : 'ذخیره'}</button>
+                              <button type="button" onClick={() => { setShowAddDay(false); setEditingDay(null); setNewDay({ jYear: '', jMonth: '', jDay: '', hour: '', minute: '', employeeId: '', area: '' }); }} className="border-2 border-gray-200 px-6 py-2.5 rounded-xl font-bold hover:bg-gray-50 transition">انصراف</button>
                             </div>
                           </form>
                         </div>
@@ -523,12 +655,19 @@ export default function AdminDashboard() {
                                 </span>
                               </td>
                               <td className="p-4">
-                                {day.status === 'scheduled' && (
-                                  <div className="flex gap-2">
-                                    <button onClick={() => updateCollectionDay(day.id, { status: 'completed' })} className="p-2 rounded-lg text-emerald-500 hover:bg-emerald-50 transition"><Check className="w-4 h-4" /></button>
-                                    <button onClick={() => updateCollectionDay(day.id, { status: 'cancelled' })} className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition"><X className="w-4 h-4" /></button>
-                                  </div>
-                                )}
+                                <div className="flex gap-2">
+                                  <button onClick={() => handleEditDay(day.id)} className="p-2 rounded-lg text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition" title="ویرایش">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                  </button>
+                                  {day.status === 'scheduled' && (
+                                    <>
+                                      <button onClick={() => updateCollectionDay(day.id, { status: 'completed' })} className="p-2 rounded-lg text-emerald-500 hover:bg-emerald-50 transition" title="تکمیل"><Check className="w-4 h-4" /></button>
+                                      <button onClick={() => updateCollectionDay(day.id, { status: 'cancelled' })} className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition" title="لغو"><X className="w-4 h-4" /></button>
+                                    </>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           ))}
