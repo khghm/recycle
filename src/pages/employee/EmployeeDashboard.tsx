@@ -11,7 +11,7 @@ export default function EmployeeDashboard() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
-  const [newRecord, setNewRecord] = useState({ userId: '', wasteType: 'پلاستیک', weight: 0, pointsAwarded: 0 });
+  const [newRecord, setNewRecord] = useState({ userId: '', wasteType: 'پلاستیک', weight: 0, pointsAwarded: 0, requestId: '' });
   const [message, setMessage] = useState('');
 
   if (!currentUser || currentUser.role !== 'employee') return <Navigate to="/login" />;
@@ -47,25 +47,33 @@ export default function EmployeeDashboard() {
       userId: newRecord.userId, userName: user.name, employeeId: currentUser.id,
       employeeName: currentUser.name, date: new Date().toISOString().split('T')[0],
       wasteType: newRecord.wasteType, weight: newRecord.weight, pointsAwarded: newRecord.pointsAwarded, status: 'completed',
+      requestId: newRecord.requestId || undefined,
     });
     setMessage(`امتیاز ${newRecord.pointsAwarded} برای ${user.name} ثبت شد`);
-    setNewRecord({ userId: '', wasteType: 'پلاستیک', weight: 0, pointsAwarded: 0 });
+    setNewRecord({ userId: '', wasteType: 'پلاستیک', weight: 0, pointsAwarded: 0, requestId: '' });
     setShowAddRecord(false);
     setTimeout(() => setMessage(''), 3000);
   };
 
   const handleScheduleRequest = () => {
     if (!selectedRequest || !selectedDate) return;
-    updateCollectionRequest(selectedRequest, {
+    
+    // Fix #8: Check for conflicting schedule
+    const success = updateCollectionRequest(selectedRequest, {
       status: 'scheduled',
       scheduledDate: selectedDate,
       employeeId: currentUser.id,
       employeeName: currentUser.name,
     });
-    setMessage('درخواست زمان‌بندی شد');
-    setShowScheduleModal(false);
-    setSelectedRequest(null);
-    setSelectedDate('');
+
+    if (success) {
+      setMessage('درخواست زمان‌بندی شد');
+      setShowScheduleModal(false);
+      setSelectedRequest(null);
+      setSelectedDate('');
+    } else {
+      setMessage('این تاریخ قبلاً رزرو شده است! تاریخ دیگری انتخاب کنید.');
+    }
     setTimeout(() => setMessage(''), 3000);
   };
 
@@ -315,11 +323,22 @@ export default function EmployeeDashboard() {
                     <form onSubmit={handleSubmitRecord} className="space-y-5">
                       <div>
                         <label className="block text-gray-700 font-bold mb-2 text-sm">انتخاب کاربر</label>
-                        <select value={newRecord.userId} onChange={(e) => setNewRecord({ ...newRecord, userId: e.target.value })} className="w-full border-2 border-gray-100 rounded-xl p-3.5 focus:border-emerald-500 focus:outline-none transition" required>
+                        <select value={newRecord.userId} onChange={(e) => setNewRecord({ ...newRecord, userId: e.target.value, requestId: '' })} className="w-full border-2 border-gray-100 rounded-xl p-3.5 focus:border-emerald-500 focus:outline-none transition" required>
                           <option value="">کاربر را انتخاب کنید</option>
                           {regularUsers.map((user) => (<option key={user.id} value={user.id}>{user.name} - {user.phone}</option>))}
                         </select>
                       </div>
+                      {newRecord.userId && myScheduledRequests.filter(r => r.userId === newRecord.userId).length > 0 && (
+                        <div>
+                          <label className="block text-gray-700 font-bold mb-2 text-sm">درخواست مرتبط (اختیاری)</label>
+                          <select value={newRecord.requestId} onChange={(e) => setNewRecord({ ...newRecord, requestId: e.target.value })} className="w-full border-2 border-gray-100 rounded-xl p-3.5 focus:border-emerald-500 focus:outline-none transition">
+                            <option value="">بدون درخواست (جمع‌آوری عمومی)</option>
+                            {myScheduledRequests.filter(r => r.userId === newRecord.userId).map((req) => (
+                              <option key={req.id} value={req.id}>{req.productName} - {req.scheduledDate}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                       <div className="grid md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-gray-700 font-bold mb-2 text-sm">نوع زباله</label>

@@ -139,8 +139,8 @@ interface AppContextType {
   addPurchase: (purchase: Omit<Purchase, 'id' | 'date'>) => boolean;
   updatePurchase: (id: string, status: Purchase['status']) => void;
   updateUserPoints: (userId: string, points: number) => void;
-  addCollectionRequest: (request: Omit<CollectionRequest, 'id' | 'createdAt' | 'status'>) => void;
-  updateCollectionRequest: (id: string, updates: Partial<CollectionRequest>) => void;
+  addCollectionRequest: (request: Omit<CollectionRequest, 'id' | 'createdAt' | 'status'>) => boolean;
+  updateCollectionRequest: (id: string, updates: Partial<CollectionRequest>) => boolean;
   calculateWastePlan: (requiredPoints: number) => WastePlan[];
   calculateCombinations: (requiredPoints: number) => WastePlan[][];
   addToCart: (productId: string) => void;
@@ -606,6 +606,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
       // Check badges
       checkAndAwardBadges(record.userId);
+
+      // Fix #6: Notify user about points awarded
+      addNotification({
+        userId: record.userId,
+        title: 'امتیاز دریافت شد!',
+        message: `${record.pointsAwarded} امتیاز بابت جمع‌آوری ${record.weight} کیلو ${record.wasteType} به حساب شما اضافه شد`,
+        type: 'success',
+      });
+
+      // Fix #1: Check if there's a pending collection request that can now be fulfilled
+      if (record.requestId) {
+        const relatedRequest = collectionRequests.find((r) => r.id === record.requestId);
+        if (relatedRequest && relatedRequest.status === 'scheduled') {
+          // Mark request as completed
+          setCollectionRequests(collectionRequests.map((r) => 
+            r.id === record.requestId ? { ...r, status: 'completed' } : r
+          ));
+          
+          // Check if user now has enough points for the product
+          const updatedUserAfterPoints = users.find((u) => u.id === record.userId);
+          if (updatedUserAfterPoints && updatedUserAfterPoints.points >= relatedRequest.requiredPoints) {
+            // Auto-purchase the product
+            const product = products.find((p) => p.id === relatedRequest.productId);
+            if (product && product.stock > 0) {
+              addPurchase({
+                userId: relatedRequest.userId,
+                userName: relatedRequest.userName,
+                productId: product.id,
+                productName: product.name,
+                points: relatedRequest.requiredPoints,
+                status: 'pending',
+              });
+
+              addNotification({
+                userId: record.userId,
+                title: 'خرید خودکار انجام شد!',
+                message: `با امتیازهای کسب شده، ${product.name} به صورت خودکار خریداری شد`,
+                type: 'success',
+              });
+            }
+          }
+        }
+      }
     }
   };
 
@@ -634,6 +677,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Update product stock
     setProducts(products.map((p) => (p.id === purchase.productId ? { ...p, stock: p.stock - 1 } : p)));
 
+    // Add activity for purchase (Fix #11)
+    addActivity({
+      userId: purchase.userId,
+      type: 'purchase',
+      title: `خرید ${purchase.productName}`,
+      description: `${purchase.productName} با ${purchase.points} امتیاز خریداری شد`,
+    });
+
+    // Check badges for purchase (Fix #12)
+    checkAndAwardBadges(purchase.userId);
+
+    // Notify user about successful purchase (Fix #6 pattern)
+    addNotification({
+      userId: purchase.userId,
+      title: 'خرید موفق',
+      message: `${purchase.productName} با موفقیت خریداری شد. پس از تأیید ادمین، محصول تحویل داده خواهد شد.`,
+      type: 'success',
+    });
+
     return true;
   };
 
@@ -653,21 +715,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // محاسبه برنامه زباله برای رسیدن به امتیاز مورد نیاز
+  // Fix #10: محاسبه بهینه برنامه زباله برای رسیدن به امتیاز مورد نیاز
   const calculateWastePlan = (requiredPoints: number): WastePlan[] => {
     const wasteTypes = Object.entries(POINTS_PER_KG);
+    const sorted = [...wasteTypes].sort((a, b) => b[1] - a[1]);
+    
+    // الگوریتم حریصانه بهینه: شروع با بالاترین امتیاز
     const plan: WastePlan[] = [];
     let remaining = requiredPoints;
-
-    // شروع با بالاترین امتیاز به ازای هر کیلو
-    const sorted = [...wasteTypes].sort((a, b) => b[1] - a[1]);
     
     for (const [type, pointsPerKg] of sorted) {
       if (remaining <= 0) break;
-      const weight = Math.ceil(remaining / pointsPerKg);
+      // محاسبه دقیق وزن مورد نیاز (بدون گرد کردن به بالا)
+      const exactWeight = remaining / pointsPerKg;
+      const weight = Math.ceil(exactWeight);
       const totalPoints = weight * pointsPerKg;
-      plan.push({ wasteType: type, weight, pointsPerKg, totalPoints });
-      remaining -= totalPoints;
+      
+      // فقط اگر این نوع زباله بهینه‌تر است اضافه کن
+      if (weight > 0 && (plan.length === 0 || totalPoints <= remaining + pointsPerKg)) {
+        plan.push({ wasteType: type, weight, pointsPerKg, totalPoints });
+        remaining -= totalPoints;
+      }
+    }
+
+    // اگر هنوز امتیاز باقی مانده، از نوع بعدی استفاده کن
+    if (remaining > 0 && plan.length > 0) {
+      const lastItem = plan[plan.length - 1];
+      const nextType = sorted.find(([type]) => type !== lastItem.wasteType);
+      if (nextType) {
+        const [type, pointsPerKg] = nextType;
+        const weight = Math.ceil(remaining / pointsPerKg);
+        plan.push({ wasteType: type, weight, pointsPerKg, totalPoints: weight * pointsPerKg });
+      }
     }
 
     return plan;
@@ -723,7 +802,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return combinations;
   };
 
-  const addCollectionRequest = (request: Omit<CollectionRequest, 'id' | 'createdAt' | 'status'>) => {
+  const addCollectionRequest = (request: Omit<CollectionRequest, 'id' | 'createdAt' | 'status'>): boolean => {
+    // Fix #4: Check for duplicate pending requests for the same product
+    const existingRequest = collectionRequests.find(
+      (r) => r.userId === request.userId && 
+             r.productId === request.productId && 
+             (r.status === 'pending' || r.status === 'assigned' || r.status === 'scheduled')
+    );
+    if (existingRequest) return false;
+
+    // Fix #5: Check if user already has enough points (should buy directly)
+    const user = users.find((u) => u.id === request.userId);
+    if (user && user.points >= request.requiredPoints) return false;
+
+    // Fix #9: Check product stock availability
+    const product = products.find((p) => p.id === request.productId);
+    if (!product || product.stock <= 0) return false;
+
     const newRequest: CollectionRequest = {
       ...request,
       id: Date.now().toString(),
@@ -731,10 +826,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
       status: 'pending',
     };
     setCollectionRequests([...collectionRequests, newRequest]);
+
+    // Fix #7: Notify all employees and admins about new request
+    const employeesAndAdmins = users.filter((u) => u.role === 'employee' || u.role === 'admin');
+    employeesAndAdmins.forEach((staff) => {
+      addNotification({
+        userId: staff.id,
+        title: 'درخواست جمع‌آوری جدید',
+        message: `${request.userName} درخواست جمع‌آوری برای ${request.productName} ثبت کرد`,
+        type: 'info',
+      });
+    });
+
+    // Notify user that request is registered
+    addNotification({
+      userId: request.userId,
+      title: 'درخواست ثبت شد',
+      message: 'درخواست جمع‌آوری شما ثبت شد. پس از زمان‌بندی توسط کارمند، مطلع خواهید شد.',
+      type: 'success',
+    });
+
+    return true;
   };
 
-  const updateCollectionRequest = (id: string, updates: Partial<CollectionRequest>) => {
+  const updateCollectionRequest = (id: string, updates: Partial<CollectionRequest>): boolean => {
+    const request = collectionRequests.find((r) => r.id === id);
+    if (!request) return false;
+
+    // Fix #8: Check if scheduled date is already used by another request
+    if (updates.scheduledDate) {
+      const conflictingRequest = collectionRequests.find(
+        (r) => r.id !== id && 
+               r.scheduledDate === updates.scheduledDate && 
+               r.employeeId === updates.employeeId &&
+               (r.status === 'scheduled' || r.status === 'assigned')
+      );
+      if (conflictingRequest) return false;
+    }
+
     setCollectionRequests(collectionRequests.map((r) => (r.id === id ? { ...r, ...updates } : r)));
+
+    // Notify user about scheduling
+    if (updates.status === 'scheduled' && updates.scheduledDate) {
+      addNotification({
+        userId: request.userId,
+        title: 'درخواست زمان‌بندی شد',
+        message: `درخواست جمع‌آوری شما برای تاریخ ${updates.scheduledDate} زمان‌بندی شد`,
+        type: 'info',
+      });
+    }
+
+    return true;
   };
 
   // Cart functions
