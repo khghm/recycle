@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Users, UserCheck, Package, Truck, ClipboardList, ShoppingBag, Plus, Trash2, Check, X, Leaf, TrendingUp, Award, Recycle, Calendar, Bell, Clock, MapPin } from 'lucide-react';
+import { LayoutDashboard, Users, UserCheck, Package, Truck, ClipboardList, ShoppingBag, Plus, Trash2, Check, X, Leaf, TrendingUp, Award, Recycle, Calendar, Bell, Clock, MapPin, Menu } from 'lucide-react';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import { useToast } from '../../components/Toast';
+import Breadcrumbs from '../../components/Breadcrumbs';
+import Pagination from '../../components/Pagination';
+import EmptyState from '../../components/EmptyState';
 
 export default function AdminDashboard() {
   const { currentUser, users, products, collectionDays, collectionRequests, collectionRecords, purchases, addCollectionDay, addProduct, updateProduct, updateUser, deleteProduct, updatePurchase, updateCollectionDay, updateCollectionRequest } = useApp();
@@ -15,6 +20,14 @@ export default function AdminDashboard() {
   const [newProduct, setNewProduct] = useState({ name: '', description: '', points: 0, image: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=400&fit=crop', category: '', stock: 0 });
   const [newDay, setNewDay] = useState({ jYear: '', jMonth: '', jDay: '', hour: '', minute: '', employeeId: '', area: '' });
   const [editEmployeeData, setEditEmployeeData] = useState({ name: '', phone: '', address: '' });
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; productId: string | null }>({ isOpen: false, productId: null });
+  const [cancelConfirm, setCancelConfirm] = useState<{ isOpen: boolean; requestId: string | null }>({ isOpen: false, requestId: null });
+  const [usersPage, setUsersPage] = useState(1);
+  const [recordsPage, setRecordsPage] = useState(1);
+  const { showToast } = useToast();
+
+  const ITEMS_PER_PAGE = 10;
 
   if (!currentUser || currentUser.role !== 'admin') return <Navigate to="/login" />;
 
@@ -123,9 +136,32 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Mobile Sidebar Toggle */}
+      <button
+        onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        className="lg:hidden fixed top-24 right-4 z-40 bg-emerald-600 text-white p-3 rounded-2xl shadow-lg"
+      >
+        <Menu className="w-6 h-6" />
+      </button>
+
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {mobileSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="lg:hidden fixed inset-0 bg-black/50 z-40"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       <div className="flex flex-col lg:flex-row">
         {/* Sidebar */}
-        <aside className="lg:w-72 bg-white shadow-xl lg:min-h-screen p-6 border-l border-gray-100">
+        <aside className={`lg:w-72 bg-white shadow-xl lg:min-h-screen p-6 border-l border-gray-100 fixed lg:relative inset-y-0 right-0 z-50 transform transition-transform duration-300 ${
+          mobileSidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+        }`}>
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-green-600 rounded-3xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-emerald-500/20">
               <Leaf className="w-10 h-10 text-white" />
@@ -137,7 +173,10 @@ export default function AdminDashboard() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setMobileSidebarOpen(false);
+                }}
                 className={`w-full text-right px-4 py-3 rounded-2xl flex items-center gap-3 transition-all duration-300 font-medium ${
                   activeTab === tab.id
                     ? 'bg-gradient-to-l from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/20'
@@ -152,7 +191,10 @@ export default function AdminDashboard() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6 lg:p-8">
+        <main className="flex-1 p-6 lg:p-8 lg:mr-0 mr-0">
+          {/* Breadcrumbs */}
+          <Breadcrumbs items={[{ label: 'پنل مدیریت' }, { label: tabs.find(t => t.id === activeTab)?.label || '' }]} />
+          
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -317,7 +359,7 @@ export default function AdminDashboard() {
                         {request.status === 'pending' && (
                           <div className="flex gap-2">
                             <button
-                              onClick={() => updateCollectionRequest(request.id, { status: 'cancelled' })}
+                              onClick={() => setCancelConfirm({ isOpen: true, requestId: request.id })}
                               className="px-4 py-2 border-2 border-red-200 text-red-600 rounded-xl font-bold hover:bg-red-50 transition"
                             >
                               لغو
@@ -358,7 +400,7 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          {regularUsers.map((user) => (
+                          {regularUsers.slice((usersPage - 1) * ITEMS_PER_PAGE, usersPage * ITEMS_PER_PAGE).map((user) => (
                             <tr key={user.id} className="border-t border-gray-50 hover:bg-emerald-50/30 transition">
                               <td className="p-4 font-bold text-gray-800">{user.name}</td>
                               <td className="p-4 text-gray-500 text-sm">{user.email}</td>
@@ -374,7 +416,15 @@ export default function AdminDashboard() {
                         </tbody>
                       </table>
                     </div>
-                    {regularUsers.length === 0 && <p className="p-8 text-center text-gray-400">کاربری ثبت‌نام نکرده</p>}
+                    {regularUsers.length === 0 ? (
+                      <EmptyState icon={Users} title="کاربری ثبت‌نام نکرده" />
+                    ) : (
+                      <Pagination
+                        currentPage={usersPage}
+                        totalPages={Math.ceil(regularUsers.length / ITEMS_PER_PAGE)}
+                        onPageChange={setUsersPage}
+                      />
+                    )}
                   </div>
                 </div>
               )}
@@ -537,7 +587,7 @@ export default function AdminDashboard() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                               </svg>
                             </button>
-                            <button onClick={() => deleteProduct(product.id)} className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition" title="حذف">
+                            <button onClick={() => setDeleteConfirm({ isOpen: true, productId: product.id })} className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition" title="حذف">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -702,7 +752,7 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          {collectionRecords.map((record) => (
+                          {collectionRecords.slice((recordsPage - 1) * ITEMS_PER_PAGE, recordsPage * ITEMS_PER_PAGE).map((record) => (
                             <tr key={record.id} className="border-t border-gray-50 hover:bg-emerald-50/30 transition">
                               <td className="p-4 font-bold text-gray-800">{record.userName}</td>
                               <td className="p-4 text-gray-600">{record.employeeName}</td>
@@ -715,7 +765,15 @@ export default function AdminDashboard() {
                         </tbody>
                       </table>
                     </div>
-                    {collectionRecords.length === 0 && <p className="p-8 text-center text-gray-400">رکوردی وجود ندارد</p>}
+                    {collectionRecords.length === 0 ? (
+                      <EmptyState icon={ClipboardList} title="رکوردی وجود ندارد" />
+                    ) : (
+                      <Pagination
+                        currentPage={recordsPage}
+                        totalPages={Math.ceil(collectionRecords.length / ITEMS_PER_PAGE)}
+                        onPageChange={setRecordsPage}
+                      />
+                    )}
                   </div>
                 </div>
               )}
@@ -773,6 +831,40 @@ export default function AdminDashboard() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Delete Product Confirmation */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, productId: null })}
+        onConfirm={() => {
+          if (deleteConfirm.productId) {
+            deleteProduct(deleteConfirm.productId);
+            showToast('محصول با موفقیت حذف شد', 'success');
+          }
+        }}
+        title="حذف محصول"
+        message="آیا از حذف این محصول مطمئن هستید؟ این عمل قابل بازگشت نیست."
+        confirmText="حذف"
+        cancelText="انصراف"
+        type="danger"
+      />
+
+      {/* Cancel Request Confirmation */}
+      <ConfirmDialog
+        isOpen={cancelConfirm.isOpen}
+        onClose={() => setCancelConfirm({ isOpen: false, requestId: null })}
+        onConfirm={() => {
+          if (cancelConfirm.requestId) {
+            updateCollectionRequest(cancelConfirm.requestId, { status: 'cancelled' });
+            showToast('درخواست لغو شد', 'success');
+          }
+        }}
+        title="لغو درخواست"
+        message="آیا از لغو این درخواست مطمئن هستید؟"
+        confirmText="لغو درخواست"
+        cancelText="انصراف"
+        type="warning"
+      />
     </div>
   );
 }

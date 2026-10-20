@@ -3,6 +3,8 @@ import { useApp } from '../../context/AppContext';
 import { Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, PlusCircle, ClipboardList, UserCheck, Scale, Award, Package, Check, X, MapPin, Bell, Clock, User } from 'lucide-react';
+import { useToast } from '../../components/Toast';
+import Breadcrumbs from '../../components/Breadcrumbs';
 
 export default function EmployeeDashboard() {
   const { currentUser, users, collectionDays, collectionRequests, collectionRecords, addCollectionRecord, updateCollectionRequest } = useApp();
@@ -13,6 +15,7 @@ export default function EmployeeDashboard() {
   const [selectedDate, setSelectedDate] = useState('');
   const [newRecord, setNewRecord] = useState({ userId: '', wasteType: 'پلاستیک', weight: 0, pointsAwarded: 0, requestId: '' });
   const [message, setMessage] = useState('');
+  const { showToast } = useToast();
 
   if (!currentUser || currentUser.role !== 'employee') return <Navigate to="/login" />;
 
@@ -49,10 +52,9 @@ export default function EmployeeDashboard() {
       wasteType: newRecord.wasteType, weight: newRecord.weight, pointsAwarded: newRecord.pointsAwarded, status: 'completed',
       requestId: newRecord.requestId || undefined,
     });
-    setMessage(`امتیاز ${newRecord.pointsAwarded} برای ${user.name} ثبت شد`);
+    showToast(`امتیاز ${newRecord.pointsAwarded} برای ${user.name} ثبت شد`, 'success');
     setNewRecord({ userId: '', wasteType: 'پلاستیک', weight: 0, pointsAwarded: 0, requestId: '' });
     setShowAddRecord(false);
-    setTimeout(() => setMessage(''), 3000);
   };
 
   const handleScheduleRequest = () => {
@@ -101,6 +103,9 @@ export default function EmployeeDashboard() {
       </AnimatePresence>
 
       <div className="max-w-6xl mx-auto p-6">
+        {/* Breadcrumbs */}
+        <Breadcrumbs items={[{ label: 'پنل کارمند' }]} />
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

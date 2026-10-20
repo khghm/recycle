@@ -4,12 +4,17 @@ import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Leaf, LayoutDashboard, LogOut, ShoppingBag, Coins, ChevronDown, Bell } from 'lucide-react';
 
+import ConfirmDialog from './ConfirmDialog';
+import { useToast } from './Toast';
+
 export default function Navbar() {
   const { currentUser, logout, cart, notifications, setShowCartModal } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const { showToast } = useToast();
 
   const unreadNotifications = currentUser ? notifications.filter((n) => n.userId === currentUser.id && !n.read).length : 0;
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -26,6 +31,7 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
+    showToast('با موفقیت خارج شدید', 'success');
     navigate('/');
   };
 
@@ -139,7 +145,7 @@ export default function Navbar() {
                     داشبورد
                   </Link>
                   <button
-                    onClick={handleLogout}
+                    onClick={() => setShowLogoutConfirm(true)}
                     className="p-2.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-300"
                   >
                     <LogOut className="w-4 h-4" />
@@ -163,13 +169,41 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Mobile Toggle */}
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden p-2 rounded-xl text-gray-600 hover:bg-emerald-50 transition"
-            >
-              {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            {/* Mobile Actions */}
+            <div className="lg:hidden flex items-center gap-2">
+              {currentUser && (
+                <>
+                  <button
+                    onClick={() => setShowCartModal(true)}
+                    className="relative p-2 rounded-xl text-gray-600 hover:bg-emerald-50 transition"
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                    {cartItemsCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                        {cartItemsCount}
+                      </span>
+                    )}
+                  </button>
+                  <Link
+                    to={getDashboardLink()}
+                    className="relative p-2 rounded-xl text-gray-600 hover:bg-emerald-50 transition"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {unreadNotifications > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                        {unreadNotifications}
+                      </span>
+                    )}
+                  </Link>
+                </>
+              )}
+              <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="p-2 rounded-xl text-gray-600 hover:bg-emerald-50 transition"
+              >
+                {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           </div>
         </div>
       </motion.nav>
@@ -239,6 +273,18 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Logout Confirmation */}
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleLogout}
+        title="خروج از حساب"
+        message="آیا مطمئن هستید که می‌خواهید از حساب خود خارج شوید؟"
+        confirmText="خروج"
+        cancelText="انصراف"
+        type="warning"
+      />
 
       {/* Spacer */}
       <div className="h-20"></div>

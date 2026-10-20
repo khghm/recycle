@@ -3,6 +3,8 @@ import { useApp, POINTS_PER_KG } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Coins, Search, Filter, Star, Check, X, AlertTriangle, Recycle, ArrowLeft, Calendar, MapPin, Plus, Minus, Trash2 } from 'lucide-react';
+import { useToast } from '../components/Toast';
+import EmptyState from '../components/EmptyState';
 
 export default function Shop() {
   const { products, currentUser, addPurchase, addCollectionRequest, collectionRequests, cart, addToCart, removeFromCart, updateCartQuantity, getCartTotalPoints, clearCart, showCartModal, setShowCartModal } = useApp();
@@ -14,6 +16,7 @@ export default function Shop() {
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const categories = ['همه', ...Array.from(new Set(products.map((p) => p.category)))];
   const filteredProducts = products.filter((p) => {
@@ -126,10 +129,9 @@ export default function Shop() {
       productId: product.id, productName: product.name,
       points: product.points, status: 'pending',
     });
-    if (success) setMessage({ text: 'خرید با موفقیت ثبت شد!', type: 'success' });
-    else setMessage({ text: 'امتیاز کافی ندارید یا محصول موجود نیست', type: 'error' });
+    if (success) showToast('خرید با موفقیت ثبت شد!', 'success');
+    else showToast('امتیاز کافی ندارید یا محصول موجود نیست', 'error');
     setShowModal(false);
-    setTimeout(() => setMessage(null), 3000);
   };
 
   const handleRequestCollection = () => {
@@ -137,8 +139,7 @@ export default function Shop() {
     
     // Fix #5: Check if user already has enough points
     if (currentUser.points >= requiredPoints) {
-      setMessage({ text: 'شما امتیاز کافی دارید! مستقیماً خرید کنید.', type: 'error' });
-      setTimeout(() => setMessage(null), 3000);
+      showToast('شما امتیاز کافی دارید! مستقیماً خرید کنید.', 'warning');
       return;
     }
 
@@ -164,10 +165,10 @@ export default function Shop() {
       });
 
       if (success) {
-        setMessage({ text: 'درخواست جمع‌آوری برای کل سبد خرید ثبت شد!', type: 'success' });
+        showToast('درخواست جمع‌آوری برای کل سبد خرید ثبت شد!', 'success');
         setShowWastePlan(false);
       } else {
-        setMessage({ text: 'درخواست تکراری است یا امتیاز کافی دارید!', type: 'error' });
+        showToast('درخواست تکراری است یا امتیاز کافی دارید!', 'error');
       }
     } else if (selectedProductData) {
       // Single product request
@@ -183,14 +184,12 @@ export default function Shop() {
       });
 
       if (success) {
-        setMessage({ text: 'درخواست جمع‌آوری با موفقیت ثبت شد!', type: 'success' });
+        showToast('درخواست جمع‌آوری با موفقیت ثبت شد!', 'success');
         setShowWastePlan(false);
       } else {
-        setMessage({ text: 'درخواست تکراری است یا امتیاز کافی دارید!', type: 'error' });
+        showToast('درخواست تکراری است یا امتیاز کافی دارید!', 'error');
       }
     }
-
-    setTimeout(() => setMessage(null), 3000);
   };
 
   return (
@@ -367,7 +366,12 @@ export default function Shop() {
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => currentUser && addToCart(product.id)}
+                      onClick={() => {
+                        if (currentUser) {
+                          addToCart(product.id);
+                          showToast(`${product.name} به سبد خرید اضافه شد`, 'success');
+                        }
+                      }}
                       disabled={product.stock <= 0 || !currentUser}
                       className={`flex-1 px-3 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
                         product.stock > 0 && currentUser
@@ -409,10 +413,11 @@ export default function Shop() {
         </motion.div>
 
         {filteredProducts.length === 0 && (
-          <div className="text-center py-20">
-            <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 font-bold">محصولی یافت نشد</p>
-          </div>
+          <EmptyState
+            icon={Search}
+            title="محصولی یافت نشد"
+            description="لطفاً عبارت جستجو یا فیلتر را تغییر دهید"
+          />
         )}
       </div>
 
@@ -444,10 +449,15 @@ export default function Shop() {
               </div>
 
               {cart.length === 0 ? (
-                <div className="text-center py-12">
-                  <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 font-bold">سبد خرید شما خالی است</p>
-                </div>
+                <EmptyState
+                  icon={ShoppingBag}
+                  title="سبد خرید شما خالی است"
+                  description="محصولات مورد نظر خود را به سبد خرید اضافه کنید"
+                  action={{
+                    label: 'مشاهده محصولات',
+                    onClick: () => setShowCartModal(false),
+                  }}
+                />
               ) : (
                 <>
                   <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
